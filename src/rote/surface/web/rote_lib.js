@@ -130,6 +130,12 @@
     return null;
   };
 
+  // Header cells are column titles, never label/value pairs ("Name | Branch" is not "Name: Branch").
+  const inHeaderRow = (cell) => {
+    const table = cell.closest("table");
+    return table !== null && headerRow(table) === cell.parentElement;
+  };
+
   const tableContext = (el) => {
     const cell = el.tagName === "TD" || el.tagName === "TH" ? el : el.closest("td,th");
     if (!cell) return null;
@@ -206,7 +212,7 @@
     const out = [];
     for (const cell of document.querySelectorAll("td")) {
       if (out.length >= limit) break;
-      if (!isVisible(cell) || cell.querySelector(INTERACTIVE) || cell.querySelector("table")) continue;
+      if (!isVisible(cell) || cell.querySelector(INTERACTIVE) || cell.querySelector("table") || inHeaderRow(cell)) continue;
       const text = norm(cell.innerText);
       if (!text) continue;
       const context = tableContext(cell);
@@ -240,7 +246,9 @@
     };
   };
 
-  const CONTROLS = "input:not([type=hidden]), select, textarea";
+  // Controls identified by a label. Buttons are identified by role + name instead.
+  const CONTROLS =
+    "input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=reset]):not([type=image]), select, textarea";
 
   const resolveLabel = (text, wantedRole) => {
     const target = norm(text);
@@ -258,7 +266,7 @@
     // A value cell: the cell immediately after the label cell on the same row.
     return Array.from(document.querySelectorAll("td,th"))
       .filter(isVisible)
-      .filter((cell) => !cell.querySelector(CONTROLS) && norm(cell.innerText) !== "")
+      .filter((cell) => !cell.querySelector(CONTROLS) && norm(cell.innerText) !== "" && !inHeaderRow(cell))
       .filter((cell) => cell.previousElementSibling !== null && norm(cell.previousElementSibling.innerText) === target);
   };
 
@@ -321,6 +329,50 @@
     return facts(actionable);
   };
 
+  // Value cells whose label is in `labels`: on-screen PII the product profile declares.
+  const labeledValues = (labels) => {
+    const wanted = new Set(labels.map(norm));
+    const out = [];
+    for (const cell of document.querySelectorAll("td")) {
+      const prev = cell.previousElementSibling;
+      if (!prev || !wanted.has(norm(prev.innerText)) || inHeaderRow(cell)) continue;
+      const text = norm(cell.innerText);
+      if (text) out.push({ label: norm(prev.innerText), text });
+    }
+    return out;
+  };
+
+  const PII = [/\b\d{3}-\d{2}-\d{4}\b/, /[\w.+-]+@[\w-]+\.[\w.-]+/, /\(?\b\d{3}\)?[-. ]?\d{3}[-. ]\d{4}\b/];
+
+  // Mark what a saved screenshot must hide: passwords, fields holding sensitive
+  // values, value cells next to declared labels, declared columns, and PII-looking text.
+  const markForMasking = ({ labels, columns, values }) => {
+    const wantedLabels = new Set(labels.map(norm));
+    const wantedColumns = new Set(columns.map(norm));
+    const sensitive = values.filter((v) => v && v.length >= 3);
+    let count = 0;
+    const mark = (el) => {
+      el.setAttribute("data-rote-mask", "1");
+      count += 1;
+    };
+    for (const input of document.querySelectorAll("input, textarea")) {
+      if (input.type === "password" || sensitive.some((v) => (input.value || "").includes(v))) mark(input);
+    }
+    for (const cell of document.querySelectorAll("td")) {
+      const text = cell.innerText || "";
+      const prev = cell.previousElementSibling;
+      const context = tableContext(cell);
+      if (prev && wantedLabels.has(norm(prev.innerText)) && !inHeaderRow(cell)) mark(cell);
+      else if (context && context.column && wantedColumns.has(context.column)) mark(cell);
+      else if (!cell.querySelector("td") && (sensitive.some((v) => text.includes(v)) || PII.some((re) => re.test(text)))) mark(cell);
+    }
+    return count;
+  };
+
+  const clearMasks = () => document.querySelectorAll("[data-rote-mask]").forEach((e) => e.removeAttribute("data-rote-mask"));
+
+  const summary = () => ({ url: location.href, headings: headings(), messages: messages() });
+
   window.__rote = {
     version: 1,
     norm,
@@ -339,5 +391,9 @@
     bodyText,
     hitTest,
     elementAt,
+    labeledValues,
+    markForMasking,
+    clearMasks,
+    summary,
   };
 })();
