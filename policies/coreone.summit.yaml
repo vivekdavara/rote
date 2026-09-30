@@ -1,0 +1,41 @@
+# What rote may do in Summit's CoreOne. Enforced in code by the policy gate and the
+# network allowlist, for discovery and replay alike.
+product: coreone
+tenant: summit
+
+allowed_origins:
+  - "{{tenant.origin}}"
+
+# Routes the agent may act on. /admin is deliberately absent.
+allowed_routes:
+  - /login
+  - /main
+  - /banner
+  - /nav
+  - /home
+  - /search
+  - /search/select
+  - /member
+  - /subaccount/*
+
+allowed_actions: [click, fill, select, check, press, extract]
+
+# Runtime risk classification, from what the control is rather than what an
+# artifact claims. A step that declares read_only but hits one of these is blocked.
+risk_rules:
+  - role: button
+    name_pattern: "(?i)^(confirm|submit payment|transfer|close account|delete|approve|post)$"
+    effect: irreversible
+
+on_irreversible:
+  discovery: require_operator_approval
+  replay: require_commit_token
+
+limits:
+  max_steps: 30
+  max_seconds: 600
+  step_timeout_ms: 10000
+  slow_load_cap_ms: 30000
+  max_recoveries_per_step: 3
+  max_restarts: 1
+  escalation_timeout_s: 900

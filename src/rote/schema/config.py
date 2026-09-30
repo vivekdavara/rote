@@ -38,7 +38,7 @@ class InterruptSpec(_Model):
     code: str
     kind: Literal["recoverable", "failure"]
     when: Condition
-    handle: Literal["steps", "relogin_restart", "restart", "wait"] | None = None
+    handle: Literal["steps", "relogin_restart", "restart"] | None = None
     steps: list[Step] = Field(default_factory=list)
     max_attempts: int = 2
     description: str | None = None

@@ -1,0 +1,87 @@
+# Product profile for the CoreOne vendor product, shared by every tenant that runs it.
+#
+# The login flow, the interrupts every capability inherits, the version
+# fingerprint, and the on-screen PII fields. A real deployment would curate this
+# once per vendor product; capabilities stay small because they don't repeat it.
+product: coreone
+entry_path: /login
+
+login:
+  - id: user_id
+    action: fill
+    value: "{{secrets.coreone.username}}"
+    target:
+      locators:
+        - {by: label, text: User ID, role: textbox}
+  - id: password
+    action: fill
+    value: "{{secrets.coreone.password}}"
+    target:
+      locators:
+        - {by: label, text: Password, role: password}
+  - id: sign_on
+    action: click
+    target:
+      locators:
+        - {by: role, role: button, name: Sign On}
+login_success:
+  text_visible: Main Menu
+  frame: main
+
+fingerprint:
+  frame: banner
+  version_regex: 'Member Servicing v(\d+\.\d+)'
+
+# While this is visible (or a frame is still waiting for its document), the app is
+# loading. Timeouts during loading become SLOW_LOAD (then LOAD_TIMEOUT), not
+# UNEXPECTED_STATE.
+loading:
+  text_visible: Please wait
+
+interrupts:
+  - code: KNOWN_INTERSTITIAL
+    description: CoreOne security notice; acknowledged and dismissed.
+    kind: recoverable
+    when: {text_visible: Security Notice}
+    handle: steps
+    steps:
+      - id: acknowledge_notice
+        action: click
+        target:
+          frame: "*"
+          locators:
+            - {by: role, role: button, name: Acknowledge}
+
+  - code: SESSION_EXPIRED
+    description: The CoreOne session expired; signed on again and restarted from the beginning.
+    kind: recoverable
+    when: {text_visible: Your session has expired}
+    handle: relogin_restart
+    max_attempts: 1
+
+  - code: TRANSIENT_APP_ERROR
+    description: CoreOne reported a temporary outage (HTTP 503); restarted from the beginning.
+    kind: recoverable
+    when: {text_visible: The server is temporarily unable to service your request}
+    handle: restart
+    max_attempts: 1
+
+  - code: APP_ERROR
+    description: CoreOne returned a server error page.
+    kind: failure
+    when: {text_visible: "Server Error in '/CoreOne' Application"}
+
+  - code: PERMISSION_DENIED
+    description: >-
+      The service account is not authorized for this CoreOne function. This is a
+      configuration problem for an administrator, not a business result for the caller.
+    kind: failure
+    when: {text_visible: You are not authorized to access this function}
+
+dialogs:
+  - message_contains: pending mail items
+    respond: accept
+
+redaction:
+  mask_labels: [Name, Address, Phone, SSN, Date of Birth, Notes]
+  mask_columns: [Name]

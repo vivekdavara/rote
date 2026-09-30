@@ -109,6 +109,7 @@ class RunResult(_Model):
     recoveries: list[RecoveryRecord] = Field(default_factory=list)
     interventions: list[InterventionRecord] = Field(default_factory=list)
     drift: list[DriftSignal] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
     idempotent_replay: bool = Field(
         default=False, description="True when this result came from the idempotency ledger, not a fresh run."
     )

@@ -1,0 +1,11 @@
+id: summit
+product: coreone
+display_name: Summit Valley Federal Credit Union
+base_url: http://summit.localhost:8400
+product_version: "4.3.1"
+secrets:
+  coreone.username: COREONE_USERNAME
+  coreone.password: COREONE_PASSWORD
+labels: {}
+vars:
+  default_branch: Main Office
