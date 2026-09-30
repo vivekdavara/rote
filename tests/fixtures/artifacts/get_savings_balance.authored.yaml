@@ -1,0 +1,119 @@
+# Hand-written reference artifact. It pins down what discovery must produce and lets
+# the replay engine be built and tested before discovery exists.
+schema_version: 1
+id: coreone.member.get_savings_balance
+version: 1.0.0
+summary: Look up a member by member number and return the current Share Savings balance.
+product:
+  name: coreone
+  versions: ">=4.2,<5"
+surface: web
+side_effects: none
+inputs:
+  member_id:
+    type: string
+    description: Six-digit member number.
+    pattern: "^[0-9]{6}$"
+    sensitive: member_id
+outputs:
+  savings_balance:
+    type: money
+    description: Current balance of the member's Share Savings account.
+    cardinality: one
+    sensitive: balance
+outcomes:
+  MEMBER_NOT_FOUND:
+    description: No member has this member number.
+    after_step: submit_search
+    when:
+      text_visible: No members found matching
+      frame: main
+  ACCESS_RESTRICTED:
+    description: The member record is restricted (for example, an employee account).
+    after_step: open_member
+    when:
+      text_visible: Access to this member record is restricted
+      frame: main
+requires:
+  - session:operator
+steps:
+  - id: open_search
+    intent: Open Member Search from the navigation frame
+    action: click
+    target:
+      frame: nav
+      locators:
+        - by: role
+          role: link
+          name: Member Search
+    expect:
+      text_visible: Member Search
+      frame: main
+  - id: enter_member_id
+    intent: Type the member number into the Member Number field
+    action: fill
+    value: "{{inputs.member_id}}"
+    target:
+      frame: main
+      locators:
+        - by: label
+          text: Member Number
+          role: textbox
+        - by: css
+          css: "form table tr:nth-of-type(1) input"
+    expect:
+      value_equals: "{{inputs.member_id}}"
+  - id: submit_search
+    intent: Run the search
+    action: click
+    target:
+      frame: main
+      locators:
+        - by: role
+          role: button
+          name: Search
+    expect:
+      text_visible: Search Results
+      frame: main
+  - id: open_member
+    intent: Open the result row for this member
+    action: click
+    target:
+      frame: main
+      locators:
+        - by: table_cell
+          headers: ["Member #", "Name"]
+          row:
+            "Member #": "{{inputs.member_id}}"
+          then:
+            role: link
+            name: View
+    expect:
+      all:
+        - text_visible: Member Detail
+          frame: main
+        - text_visible: "{{inputs.member_id}}"
+          frame: main
+  - id: read_balance
+    intent: Read the Share Savings balance from the Accounts table
+    action: extract
+    output: savings_balance
+    parse: money
+    target:
+      frame: main
+      locators:
+        - by: table_cell
+          headers: ["Account Type", "Balance"]
+          row:
+            "Account Type": Share Savings
+          column: Balance
+success:
+  all:
+    - text_visible: Member Detail
+      frame: main
+    - text_visible: "{{inputs.member_id}}"
+      frame: main
+    - output_present: savings_balance
+provenance:
+  source: authored
+  note: Written by hand as the reference for the replay engine before discovery existed.

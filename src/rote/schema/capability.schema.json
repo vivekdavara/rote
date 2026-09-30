@@ -1,0 +1,1687 @@
+{
+  "$defs": {
+    "AllOf": {
+      "additionalProperties": false,
+      "properties": {
+        "all": {
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextVisible"
+              },
+              {
+                "$ref": "#/$defs/ElementPresent"
+              },
+              {
+                "$ref": "#/$defs/ElementAbsent"
+              },
+              {
+                "$ref": "#/$defs/LocationMatches"
+              },
+              {
+                "$ref": "#/$defs/ValueEquals"
+              },
+              {
+                "$ref": "#/$defs/OutputPresent"
+              },
+              {
+                "$ref": "#/$defs/AllOf"
+              },
+              {
+                "$ref": "#/$defs/AnyOf"
+              },
+              {
+                "$ref": "#/$defs/Not"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "All",
+          "type": "array"
+        }
+      },
+      "required": [
+        "all"
+      ],
+      "title": "AllOf",
+      "type": "object"
+    },
+    "AnyOf": {
+      "additionalProperties": false,
+      "properties": {
+        "any": {
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/TextVisible"
+              },
+              {
+                "$ref": "#/$defs/ElementPresent"
+              },
+              {
+                "$ref": "#/$defs/ElementAbsent"
+              },
+              {
+                "$ref": "#/$defs/LocationMatches"
+              },
+              {
+                "$ref": "#/$defs/ValueEquals"
+              },
+              {
+                "$ref": "#/$defs/OutputPresent"
+              },
+              {
+                "$ref": "#/$defs/AllOf"
+              },
+              {
+                "$ref": "#/$defs/AnyOf"
+              },
+              {
+                "$ref": "#/$defs/Not"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Any",
+          "type": "array"
+        }
+      },
+      "required": [
+        "any"
+      ],
+      "title": "AnyOf",
+      "type": "object"
+    },
+    "CheckStep": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "check",
+          "default": "check",
+          "title": "Action",
+          "type": "string"
+        },
+        "checked": {
+          "default": true,
+          "title": "Checked",
+          "type": "boolean"
+        },
+        "effect": {
+          "default": "read_only",
+          "enum": [
+            "read_only",
+            "reversible",
+            "irreversible"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "expect": {
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/TextVisible"
+                },
+                {
+                  "$ref": "#/$defs/ElementPresent"
+                },
+                {
+                  "$ref": "#/$defs/ElementAbsent"
+                },
+                {
+                  "$ref": "#/$defs/LocationMatches"
+                },
+                {
+                  "$ref": "#/$defs/ValueEquals"
+                },
+                {
+                  "$ref": "#/$defs/OutputPresent"
+                },
+                {
+                  "$ref": "#/$defs/AllOf"
+                },
+                {
+                  "$ref": "#/$defs/AnyOf"
+                },
+                {
+                  "$ref": "#/$defs/Not"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Postcondition checked after the action; must discriminate before/after.",
+          "title": "Expect"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "intent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intent"
+        },
+        "provenance": {
+          "default": "authored",
+          "enum": [
+            "authored",
+            "llm",
+            "human"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout Ms"
+        }
+      },
+      "required": [
+        "id",
+        "target"
+      ],
+      "title": "CheckStep",
+      "type": "object"
+    },
+    "ClickStep": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "click",
+          "default": "click",
+          "title": "Action",
+          "type": "string"
+        },
+        "effect": {
+          "default": "read_only",
+          "enum": [
+            "read_only",
+            "reversible",
+            "irreversible"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "expect": {
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/TextVisible"
+                },
+                {
+                  "$ref": "#/$defs/ElementPresent"
+                },
+                {
+                  "$ref": "#/$defs/ElementAbsent"
+                },
+                {
+                  "$ref": "#/$defs/LocationMatches"
+                },
+                {
+                  "$ref": "#/$defs/ValueEquals"
+                },
+                {
+                  "$ref": "#/$defs/OutputPresent"
+                },
+                {
+                  "$ref": "#/$defs/AllOf"
+                },
+                {
+                  "$ref": "#/$defs/AnyOf"
+                },
+                {
+                  "$ref": "#/$defs/Not"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Postcondition checked after the action; must discriminate before/after.",
+          "title": "Expect"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "intent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intent"
+        },
+        "provenance": {
+          "default": "authored",
+          "enum": [
+            "authored",
+            "llm",
+            "human"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout Ms"
+        }
+      },
+      "required": [
+        "id",
+        "target"
+      ],
+      "title": "ClickStep",
+      "type": "object"
+    },
+    "CssLocator": {
+      "additionalProperties": false,
+      "description": "Structural CSS path. Last resort: legacy markup and per-build ids break it.",
+      "properties": {
+        "brittle": {
+          "default": true,
+          "title": "Brittle",
+          "type": "boolean"
+        },
+        "by": {
+          "const": "css",
+          "default": "css",
+          "title": "By",
+          "type": "string"
+        },
+        "css": {
+          "title": "Css",
+          "type": "string"
+        }
+      },
+      "required": [
+        "css"
+      ],
+      "title": "CssLocator",
+      "type": "object"
+    },
+    "ElementAbsent": {
+      "additionalProperties": false,
+      "properties": {
+        "element_absent": {
+          "$ref": "#/$defs/Target"
+        }
+      },
+      "required": [
+        "element_absent"
+      ],
+      "title": "ElementAbsent",
+      "type": "object"
+    },
+    "ElementPresent": {
+      "additionalProperties": false,
+      "properties": {
+        "element_present": {
+          "$ref": "#/$defs/Target"
+        }
+      },
+      "required": [
+        "element_present"
+      ],
+      "title": "ElementPresent",
+      "type": "object"
+    },
+    "ExtractStep": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "extract",
+          "default": "extract",
+          "title": "Action",
+          "type": "string"
+        },
+        "effect": {
+          "default": "read_only",
+          "enum": [
+            "read_only",
+            "reversible",
+            "irreversible"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "expect": {
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/TextVisible"
+                },
+                {
+                  "$ref": "#/$defs/ElementPresent"
+                },
+                {
+                  "$ref": "#/$defs/ElementAbsent"
+                },
+                {
+                  "$ref": "#/$defs/LocationMatches"
+                },
+                {
+                  "$ref": "#/$defs/ValueEquals"
+                },
+                {
+                  "$ref": "#/$defs/OutputPresent"
+                },
+                {
+                  "$ref": "#/$defs/AllOf"
+                },
+                {
+                  "$ref": "#/$defs/AnyOf"
+                },
+                {
+                  "$ref": "#/$defs/Not"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Postcondition checked after the action; must discriminate before/after.",
+          "title": "Expect"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "intent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intent"
+        },
+        "output": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Output",
+          "type": "string"
+        },
+        "parse": {
+          "default": "string",
+          "enum": [
+            "string",
+            "integer",
+            "decimal",
+            "money",
+            "date",
+            "boolean"
+          ],
+          "title": "Parse",
+          "type": "string"
+        },
+        "provenance": {
+          "default": "authored",
+          "enum": [
+            "authored",
+            "llm",
+            "human"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout Ms"
+        }
+      },
+      "required": [
+        "id",
+        "target",
+        "output"
+      ],
+      "title": "ExtractStep",
+      "type": "object"
+    },
+    "FillStep": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "fill",
+          "default": "fill",
+          "title": "Action",
+          "type": "string"
+        },
+        "effect": {
+          "default": "read_only",
+          "enum": [
+            "read_only",
+            "reversible",
+            "irreversible"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "expect": {
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/TextVisible"
+                },
+                {
+                  "$ref": "#/$defs/ElementPresent"
+                },
+                {
+                  "$ref": "#/$defs/ElementAbsent"
+                },
+                {
+                  "$ref": "#/$defs/LocationMatches"
+                },
+                {
+                  "$ref": "#/$defs/ValueEquals"
+                },
+                {
+                  "$ref": "#/$defs/OutputPresent"
+                },
+                {
+                  "$ref": "#/$defs/AllOf"
+                },
+                {
+                  "$ref": "#/$defs/AnyOf"
+                },
+                {
+                  "$ref": "#/$defs/Not"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Postcondition checked after the action; must discriminate before/after.",
+          "title": "Expect"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "intent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intent"
+        },
+        "provenance": {
+          "default": "authored",
+          "enum": [
+            "authored",
+            "llm",
+            "human"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout Ms"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "target",
+        "value"
+      ],
+      "title": "FillStep",
+      "type": "object"
+    },
+    "InnerElement": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role"
+      ],
+      "title": "InnerElement",
+      "type": "object"
+    },
+    "InputSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "enum": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enum"
+        },
+        "pattern": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pattern"
+        },
+        "sensitive": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "PII class (e.g. member_id). Sensitive values are pseudonymized in logs.",
+          "title": "Sensitive"
+        },
+        "type": {
+          "default": "string",
+          "enum": [
+            "string",
+            "integer",
+            "decimal",
+            "boolean"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "InputSpec",
+      "type": "object"
+    },
+    "LabelLocator": {
+      "additionalProperties": false,
+      "description": "A form control identified by its visible label.\n\nResolution order: an explicit ``<label>`` or aria label; then the text in the\nadjacent table cell on the same row (the usual legacy layout); then the nearest\ntext to the left of or above the control.",
+      "properties": {
+        "by": {
+          "const": "label",
+          "default": "label",
+          "title": "By",
+          "type": "string"
+        },
+        "role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Role"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "LabelLocator",
+      "type": "object"
+    },
+    "LocationMatches": {
+      "additionalProperties": false,
+      "description": "The frame's URL path matches a glob. Query strings (session ids, tokens) are ignored.",
+      "properties": {
+        "frame": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame"
+        },
+        "location_matches": {
+          "title": "Location Matches",
+          "type": "string"
+        }
+      },
+      "required": [
+        "location_matches"
+      ],
+      "title": "LocationMatches",
+      "type": "object"
+    },
+    "Not": {
+      "additionalProperties": false,
+      "properties": {
+        "not": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TextVisible"
+            },
+            {
+              "$ref": "#/$defs/ElementPresent"
+            },
+            {
+              "$ref": "#/$defs/ElementAbsent"
+            },
+            {
+              "$ref": "#/$defs/LocationMatches"
+            },
+            {
+              "$ref": "#/$defs/ValueEquals"
+            },
+            {
+              "$ref": "#/$defs/OutputPresent"
+            },
+            {
+              "$ref": "#/$defs/AllOf"
+            },
+            {
+              "$ref": "#/$defs/AnyOf"
+            },
+            {
+              "$ref": "#/$defs/Not"
+            }
+          ],
+          "title": "Not"
+        }
+      },
+      "required": [
+        "not"
+      ],
+      "title": "Not",
+      "type": "object"
+    },
+    "OutcomeSpec": {
+      "additionalProperties": false,
+      "description": "An expected business result the caller must handle, e.g. MEMBER_NOT_FOUND.\n\nPart of the contract, not an exception. ``after_step`` scopes the detector to\nwhere the outcome can legitimately occur.",
+      "properties": {
+        "after_step": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After Step"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "when": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/TextVisible"
+            },
+            {
+              "$ref": "#/$defs/ElementPresent"
+            },
+            {
+              "$ref": "#/$defs/ElementAbsent"
+            },
+            {
+              "$ref": "#/$defs/LocationMatches"
+            },
+            {
+              "$ref": "#/$defs/ValueEquals"
+            },
+            {
+              "$ref": "#/$defs/OutputPresent"
+            },
+            {
+              "$ref": "#/$defs/AllOf"
+            },
+            {
+              "$ref": "#/$defs/AnyOf"
+            },
+            {
+              "$ref": "#/$defs/Not"
+            }
+          ],
+          "title": "When"
+        }
+      },
+      "required": [
+        "when"
+      ],
+      "title": "OutcomeSpec",
+      "type": "object"
+    },
+    "OutputPresent": {
+      "additionalProperties": false,
+      "properties": {
+        "output_present": {
+          "title": "Output Present",
+          "type": "string"
+        }
+      },
+      "required": [
+        "output_present"
+      ],
+      "title": "OutputPresent",
+      "type": "object"
+    },
+    "OutputSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "cardinality": {
+          "default": "one",
+          "enum": [
+            "one",
+            "many"
+          ],
+          "title": "Cardinality",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "sensitive": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sensitive"
+        },
+        "type": {
+          "default": "string",
+          "enum": [
+            "string",
+            "integer",
+            "decimal",
+            "money",
+            "date",
+            "boolean"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "title": "OutputSpec",
+      "type": "object"
+    },
+    "PressStep": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "press",
+          "default": "press",
+          "title": "Action",
+          "type": "string"
+        },
+        "effect": {
+          "default": "read_only",
+          "enum": [
+            "read_only",
+            "reversible",
+            "irreversible"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "expect": {
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/TextVisible"
+                },
+                {
+                  "$ref": "#/$defs/ElementPresent"
+                },
+                {
+                  "$ref": "#/$defs/ElementAbsent"
+                },
+                {
+                  "$ref": "#/$defs/LocationMatches"
+                },
+                {
+                  "$ref": "#/$defs/ValueEquals"
+                },
+                {
+                  "$ref": "#/$defs/OutputPresent"
+                },
+                {
+                  "$ref": "#/$defs/AllOf"
+                },
+                {
+                  "$ref": "#/$defs/AnyOf"
+                },
+                {
+                  "$ref": "#/$defs/Not"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Postcondition checked after the action; must discriminate before/after.",
+          "title": "Expect"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "intent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intent"
+        },
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "provenance": {
+          "default": "authored",
+          "enum": [
+            "authored",
+            "llm",
+            "human"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Target"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout Ms"
+        }
+      },
+      "required": [
+        "id",
+        "key"
+      ],
+      "title": "PressStep",
+      "type": "object"
+    },
+    "ProductRef": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "versions": {
+          "description": "Compatible product versions, e.g. '>=4.2,<5'.",
+          "title": "Versions",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "versions"
+      ],
+      "title": "ProductRef",
+      "type": "object"
+    },
+    "ProvenanceInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        },
+        "recorded_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recorded At"
+        },
+        "recorded_on": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Recorded On"
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Id"
+        },
+        "served_by": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Served By"
+        },
+        "source": {
+          "default": "authored",
+          "enum": [
+            "authored",
+            "discovered"
+          ],
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "title": "ProvenanceInfo",
+      "type": "object"
+    },
+    "RoleLocator": {
+      "additionalProperties": false,
+      "description": "Accessible role and name, as the browser's accessibility engine computes them.\n\nAccessibility trees exist on desktop too (UIA, macOS AX), so this is the\nstrategy that carries over to non-web surfaces.",
+      "properties": {
+        "by": {
+          "const": "role",
+          "default": "role",
+          "title": "By",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "role"
+      ],
+      "title": "RoleLocator",
+      "type": "object"
+    },
+    "SelectStep": {
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "const": "select",
+          "default": "select",
+          "title": "Action",
+          "type": "string"
+        },
+        "effect": {
+          "default": "read_only",
+          "enum": [
+            "read_only",
+            "reversible",
+            "irreversible"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "expect": {
+          "anyOf": [
+            {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/TextVisible"
+                },
+                {
+                  "$ref": "#/$defs/ElementPresent"
+                },
+                {
+                  "$ref": "#/$defs/ElementAbsent"
+                },
+                {
+                  "$ref": "#/$defs/LocationMatches"
+                },
+                {
+                  "$ref": "#/$defs/ValueEquals"
+                },
+                {
+                  "$ref": "#/$defs/OutputPresent"
+                },
+                {
+                  "$ref": "#/$defs/AllOf"
+                },
+                {
+                  "$ref": "#/$defs/AnyOf"
+                },
+                {
+                  "$ref": "#/$defs/Not"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Postcondition checked after the action; must discriminate before/after.",
+          "title": "Expect"
+        },
+        "id": {
+          "pattern": "^[a-z][a-z0-9_]*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "intent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Intent"
+        },
+        "option": {
+          "description": "Visible option label; may be a template.",
+          "title": "Option",
+          "type": "string"
+        },
+        "provenance": {
+          "default": "authored",
+          "enum": [
+            "authored",
+            "llm",
+            "human"
+          ],
+          "title": "Provenance",
+          "type": "string"
+        },
+        "target": {
+          "$ref": "#/$defs/Target"
+        },
+        "timeout_ms": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout Ms"
+        }
+      },
+      "required": [
+        "id",
+        "target",
+        "option"
+      ],
+      "title": "SelectStep",
+      "type": "object"
+    },
+    "TableCellLocator": {
+      "additionalProperties": false,
+      "description": "A cell, or an element inside a row, found by header text and row values.\n\n``headers`` pick the table (the innermost table whose header row contains all of\nthem). ``row`` picks exactly one row by cell values, and those values may be\ntemplates such as ``{{inputs.member_id}}``. The locator then points at either\nthe cell in ``column`` or the element described by ``then`` within that row.",
+      "properties": {
+        "by": {
+          "const": "table_cell",
+          "default": "table_cell",
+          "title": "By",
+          "type": "string"
+        },
+        "column": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Column"
+        },
+        "headers": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Headers",
+          "type": "array"
+        },
+        "row": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "minProperties": 1,
+          "title": "Row",
+          "type": "object"
+        },
+        "then": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/InnerElement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "headers",
+        "row"
+      ],
+      "title": "TableCellLocator",
+      "type": "object"
+    },
+    "Target": {
+      "additionalProperties": false,
+      "description": "A control within one frame, with ranked locator strategies.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "frame": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Frame name; omitted for the top-level document.",
+          "title": "Frame"
+        },
+        "locators": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "css": "#/$defs/CssLocator",
+                "label": "#/$defs/LabelLocator",
+                "role": "#/$defs/RoleLocator",
+                "table_cell": "#/$defs/TableCellLocator"
+              },
+              "propertyName": "by"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/RoleLocator"
+              },
+              {
+                "$ref": "#/$defs/LabelLocator"
+              },
+              {
+                "$ref": "#/$defs/TableCellLocator"
+              },
+              {
+                "$ref": "#/$defs/CssLocator"
+              }
+            ]
+          },
+          "minItems": 1,
+          "title": "Locators",
+          "type": "array"
+        }
+      },
+      "required": [
+        "locators"
+      ],
+      "title": "Target",
+      "type": "object"
+    },
+    "TextVisible": {
+      "additionalProperties": false,
+      "description": "Text is rendered and visible (``display:none`` / ``visibility:hidden`` text does not count).\n\n``frame`` omitted means any frame. Templates such as ``{{inputs.member_id}}`` are allowed.",
+      "properties": {
+        "frame": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Frame"
+        },
+        "text_visible": {
+          "title": "Text Visible",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text_visible"
+      ],
+      "title": "TextVisible",
+      "type": "object"
+    },
+    "ValueEquals": {
+      "additionalProperties": false,
+      "description": "A form control holds this value. ``target`` defaults to the step's own target.",
+      "properties": {
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Target"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "value_equals": {
+          "title": "Value Equals",
+          "type": "string"
+        }
+      },
+      "required": [
+        "value_equals"
+      ],
+      "title": "ValueEquals",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$",
+      "title": "Id",
+      "type": "string"
+    },
+    "inputs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/InputSpec"
+      },
+      "title": "Inputs",
+      "type": "object"
+    },
+    "outcomes": {
+      "additionalProperties": {
+        "$ref": "#/$defs/OutcomeSpec"
+      },
+      "title": "Outcomes",
+      "type": "object"
+    },
+    "outputs": {
+      "additionalProperties": {
+        "$ref": "#/$defs/OutputSpec"
+      },
+      "title": "Outputs",
+      "type": "object"
+    },
+    "preview_outputs": {
+      "description": "Outputs extracted before the first irreversible step; returned by preview mode.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Preview Outputs",
+      "type": "array"
+    },
+    "product": {
+      "$ref": "#/$defs/ProductRef"
+    },
+    "provenance": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProvenanceInfo"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "requires": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Requires",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "side_effects": {
+      "default": "none",
+      "enum": [
+        "none",
+        "reversible",
+        "irreversible"
+      ],
+      "title": "Side Effects",
+      "type": "string"
+    },
+    "steps": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "check": "#/$defs/CheckStep",
+            "click": "#/$defs/ClickStep",
+            "extract": "#/$defs/ExtractStep",
+            "fill": "#/$defs/FillStep",
+            "press": "#/$defs/PressStep",
+            "select": "#/$defs/SelectStep"
+          },
+          "propertyName": "action"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/ClickStep"
+          },
+          {
+            "$ref": "#/$defs/FillStep"
+          },
+          {
+            "$ref": "#/$defs/SelectStep"
+          },
+          {
+            "$ref": "#/$defs/CheckStep"
+          },
+          {
+            "$ref": "#/$defs/PressStep"
+          },
+          {
+            "$ref": "#/$defs/ExtractStep"
+          }
+        ]
+      },
+      "minItems": 1,
+      "title": "Steps",
+      "type": "array"
+    },
+    "success": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/TextVisible"
+        },
+        {
+          "$ref": "#/$defs/ElementPresent"
+        },
+        {
+          "$ref": "#/$defs/ElementAbsent"
+        },
+        {
+          "$ref": "#/$defs/LocationMatches"
+        },
+        {
+          "$ref": "#/$defs/ValueEquals"
+        },
+        {
+          "$ref": "#/$defs/OutputPresent"
+        },
+        {
+          "$ref": "#/$defs/AllOf"
+        },
+        {
+          "$ref": "#/$defs/AnyOf"
+        },
+        {
+          "$ref": "#/$defs/Not"
+        }
+      ],
+      "title": "Success"
+    },
+    "summary": {
+      "title": "Summary",
+      "type": "string"
+    },
+    "surface": {
+      "default": "web",
+      "enum": [
+        "web",
+        "desktop"
+      ],
+      "title": "Surface",
+      "type": "string"
+    },
+    "version": {
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "version",
+    "summary",
+    "product",
+    "steps",
+    "success"
+  ],
+  "title": "Capability",
+  "type": "object"
+}
