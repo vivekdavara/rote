@@ -27,6 +27,25 @@ def version() -> None:
     typer.echo(__version__)
 
 
+@app.command("app")
+def serve_mock_app(
+    port: int = typer.Option(8400, help="Port for the mock app. Tenants are harbor.localhost and summit.localhost."),
+    seed: int | None = typer.Option(None, help="Seed for the randomized control names (default: random)."),
+    faults: bool = typer.Option(True, "--faults/--no-faults", help="Enable the /__faults injection API."),
+) -> None:
+    """Run the CoreOne mock legacy app (the proxy target)."""
+    import os
+
+    import uvicorn
+
+    from mockapp.app import create_app
+
+    if faults:
+        os.environ["COREONE_FAULTS"] = "1"
+    typer.echo(f"CoreOne mock: http://harbor.localhost:{port}/login  and  http://summit.localhost:{port}/login")
+    uvicorn.run(create_app(seed=seed, faults_enabled=faults), host="127.0.0.1", port=port, log_level="warning")
+
+
 def capability_json_schema() -> str:
     return json.dumps(Capability.model_json_schema(by_alias=True), indent=2, sort_keys=True) + "\n"
 

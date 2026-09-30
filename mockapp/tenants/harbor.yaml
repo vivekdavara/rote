@@ -1,0 +1,9 @@
+id: harbor
+display_name: Harbor Community Credit Union
+product_version: "4.2.7"
+accent: "#1f3a5f"
+labels:
+  member_search: Member Search
+  member_number: Member Number
+branch_required: false
+branches: [Main Office, Harborview, Eastside]

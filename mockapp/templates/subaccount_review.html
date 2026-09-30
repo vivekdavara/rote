@@ -1,0 +1,19 @@
+{% extends "legacy.html" %}
+{% from "_macros.html" import heading with context %}
+{% block body %}
+{{ heading("Review Sub-Account") }}
+<font size="2"><b>Please review and confirm.</b> Opening a sub-account moves funds immediately and cannot be undone here.</font><br><br>
+<table border="1" cellpadding="3" cellspacing="0" bordercolor="#999999" bgcolor="#ffffff">
+  <tr><td bgcolor="#dddddd"><b>Member #</b></td><td>{{ m.member_id }}</td></tr>
+  <tr><td bgcolor="#dddddd"><b>Share Type</b></td><td>{{ r.type }}</td></tr>
+  <tr><td bgcolor="#dddddd"><b>Nickname</b></td><td>{{ r.nick or '(none)' }}</td></tr>
+  <tr><td bgcolor="#dddddd"><b>Initial Deposit</b></td><td>{{ money(r.deposit) }}</td></tr>
+  <tr><td bgcolor="#dddddd"><b>Funding Account</b></td><td>{{ r.funding_label }}</td></tr>
+</table>
+<br>
+<form method="post" action="/subaccount/confirm?mid={{ m.member_id }}&amp;sid={{ sid }}">
+  <input type="hidden" name="reviewToken" value="{{ token }}">
+  <input type="hidden" name="__VIEWSTATE" value="{{ viewstate }}">
+  <input type="submit" value="Confirm"> <input type="button" value="Back" onclick="history.back();">
+</form>
+{% endblock %}

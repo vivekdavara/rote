@@ -1,0 +1,11 @@
+# Same vendor product, newer version, configured differently: relabeled navigation
+# and field, plus a required Branch selector on the search form.
+id: summit
+display_name: Summit Valley Federal Credit Union
+product_version: "4.3.1"
+accent: "#5b3a1a"
+labels:
+  member_search: Find Member
+  member_number: Account Holder No.
+branch_required: true
+branches: [Main Office, Harborview, Eastside]

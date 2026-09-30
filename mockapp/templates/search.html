@@ -1,0 +1,66 @@
+{% extends "legacy.html" %}
+{% from "_macros.html" import heading, subheading with context %}
+{% block body %}
+{{ heading(labels.member_search) }}
+<form method="post" action="/search?sid={{ sid }}" onsubmit="document.getElementById('ctl00_mc_pnlWait').style.display='block';">
+<input type="hidden" name="__VIEWSTATE" value="{{ viewstate }}">
+<table border="0" cellpadding="3" cellspacing="0">
+  <tr>
+    <td align="right"><font size="2">{{ labels.member_number }}:</font></td>
+    <td>
+      <input type="text" name="{{ f.search_member }}" id="{{ f.search_member|replace('$', '_') }}" value="{{ values.member or '' }}" size="10" maxlength="10">
+      <input type="image" src="/static/go.gif" name="{{ f.search_go }}" width="28" height="18" style="border:1px outset #999999; background-color:#dddddd; vertical-align:middle;">
+      <span id="ctl00_mc_valMember" style="display:{{ 'inline' if invalid_member_number else 'none' }};"><font color="#cc0000">Member Number must be 6 digits.</font></span>
+    </td>
+  </tr>
+  <tr>
+    <td align="right"><font size="2">Last Name:</font></td>
+    <td><input type="text" name="{{ f.search_last }}" id="{{ f.search_last|replace('$', '_') }}" value="{{ values.last or '' }}" size="20"></td>
+  </tr>
+  {% if branch_required %}
+  <tr>
+    <td align="right"><font size="2">Branch:</font></td>
+    <td>
+      <select name="{{ f.search_branch }}" id="{{ f.search_branch|replace('$', '_') }}">
+        <option value="">-- Select --</option>
+        {% for b in branches %}<option{% if values.branch == b %} selected{% endif %}>{{ b }}</option>{% endfor %}
+      </select>
+    </td>
+  </tr>
+  {% endif %}
+  <tr><td></td><td><input type="submit" value="Search"> <input type="reset" value="Clear"></td></tr>
+</table>
+</form>
+<div id="ctl00_mc_pnlWait" style="display:none;"><font color="#666666"><i>Please wait...</i></font></div>
+{% for e in errors %}<font color="#cc0000"><b>{{ e }}</b></font><br>{% endfor %}
+{% if results is not none %}
+  {% if results %}
+  <br>
+  {{ subheading("Search Results") }}
+  <table border="1" cellpadding="3" cellspacing="0" bordercolor="#999999" bgcolor="#ffffff">
+    <tr bgcolor="#dddddd"><td><b>Member #</b></td><td><b>Name</b></td><td><b>Branch</b></td><td><b>Status</b></td><td>&nbsp;</td></tr>
+    {% for m in results %}
+    <tr>
+      <td>{{ m.member_id }}</td><td>{{ m.name }}</td><td>{{ m.branch }}</td><td>{{ m.status }}</td>
+      <td><a href="javascript:__doPostBack('ctl00$mc$gvResults','Select${{ loop.index0 }}')">View</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  <form name="aspnetForm" method="post" action="/search/select?sid={{ sid }}" style="margin:0;">
+    <input type="hidden" name="__EVENTTARGET" value="">
+    <input type="hidden" name="__EVENTARGUMENT" value="">
+    <input type="hidden" name="__VIEWSTATE" value="{{ viewstate }}">
+  </form>
+  <script type="text/javascript">
+    function __doPostBack(eventTarget, eventArgument) {
+      var f = document.forms['aspnetForm'];
+      f.__EVENTTARGET.value = eventTarget;
+      f.__EVENTARGUMENT.value = eventArgument;
+      f.submit();
+    }
+  </script>
+  {% else %}
+  <br><font color="#cc0000"><b>No members found matching the search criteria.</b></font>
+  {% endif %}
+{% endif %}
+{% endblock %}

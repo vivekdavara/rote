@@ -1,0 +1,29 @@
+{% extends "legacy.html" %}
+{% from "_macros.html" import heading, subheading with context %}
+{% block body %}
+{{ heading("Member Detail") }}
+{% if m.restricted %}
+<font color="#cc0000"><b>Access to this member record is restricted.</b></font><br>
+<font size="1">Contact a supervisor if you need access to this record.</font><br><br>
+<a href="/search?sid={{ sid }}">Back to Search</a>
+{% else %}
+<table border="0" cellpadding="2" cellspacing="0">
+  <tr><td align="right"><b>Member #:</b></td><td>{{ m.member_id }}</td><td width="30"></td><td align="right"><b>Branch:</b></td><td>{{ m.branch }}</td></tr>
+  <tr><td align="right"><b>Name:</b></td><td>{{ m.name }}</td><td></td><td align="right"><b>Status:</b></td><td>{{ m.status }}</td></tr>
+  <tr><td align="right"><b>Address:</b></td><td>{{ m.address }}</td><td></td><td align="right"><b>Member Since:</b></td><td>{{ m.member_since }}</td></tr>
+  <tr><td align="right"><b>Phone:</b></td><td>{{ m.phone }}</td><td></td><td align="right"><b>Date of Birth:</b></td><td>{{ m.dob }}</td></tr>
+  <tr><td align="right"><b>SSN:</b></td><td>XXX-XX-{{ m.ssn[-4:] }}</td><td></td><td></td><td></td></tr>
+  {% if m.notes %}<tr><td align="right" valign="top"><b>Notes:</b></td><td colspan="4">{{ m.notes|autolink }}</td></tr>{% endif %}
+</table>
+<br>
+{{ subheading("Accounts") }}
+<table border="1" cellpadding="3" cellspacing="0" bordercolor="#999999" bgcolor="#ffffff">
+  <tr bgcolor="#dddddd"><td><b>Account Type</b></td><td><b>Suffix</b></td><td><b>Description</b></td><td align="right"><b>Balance</b></td><td align="right"><b>Available</b></td></tr>
+  {% for a in m.accounts %}
+  <tr><td>{{ a.type }}</td><td>{{ a.suffix }}</td><td>{{ a.description }}</td><td align="right">{{ money(a.balance) }}</td><td align="right">{{ money(a.available) }}</td></tr>
+  {% endfor %}
+</table>
+<br>
+<a href="/subaccount/new?mid={{ m.member_id }}&amp;sid={{ sid }}">Open Sub-Account</a> &nbsp;|&nbsp; <a href="/search?sid={{ sid }}">Back to Search</a>
+{% endif %}
+{% endblock %}

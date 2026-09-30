@@ -1,0 +1,9 @@
+{% extends "legacy.html" %}
+{% block body %}
+<table width="100%" cellpadding="2" cellspacing="0">
+  <tr>
+    <td><font size="4" color="{{ tenant.accent }}"><b>CoreOne</b></font> <font size="2">Member Servicing v{{ tenant.product_version }}</font><br><font size="1">{{ tenant.display_name }}</font></td>
+    <td align="right" valign="top"><font size="1">Operator: {{ user }} &nbsp;|&nbsp; <a href="/logout" target="_top">Log Off</a></font></td>
+  </tr>
+</table>
+{% endblock %}

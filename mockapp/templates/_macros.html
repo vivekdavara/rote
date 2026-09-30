@@ -1,0 +1,8 @@
+{% macro heading(text) -%}
+<table width="100%" cellpadding="4" cellspacing="0" bgcolor="{{ tenant.accent }}"><tr><td><font color="#ffffff" size="3"><b>{{ text }}</b></font></td></tr></table>
+<br>
+{%- endmacro %}
+
+{% macro subheading(text) -%}
+<font size="2" color="{{ tenant.accent }}"><b>{{ text }}</b></font><br>
+{%- endmacro %}

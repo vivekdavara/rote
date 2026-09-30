@@ -1,0 +1,15 @@
+{% extends "legacy.html" %}
+{% from "_macros.html" import heading with context %}
+{% block body %}
+{{ heading("Sub-Account Opened") }}
+<font size="2"><b>The sub-account was opened successfully.</b></font><br><br>
+<table border="1" cellpadding="3" cellspacing="0" bordercolor="#999999" bgcolor="#ffffff">
+  <tr><td bgcolor="#dddddd"><b>Confirmation #</b></td><td>{{ confirmation }}</td></tr>
+  <tr><td bgcolor="#dddddd"><b>Member #</b></td><td>{{ m.member_id }}</td></tr>
+  <tr><td bgcolor="#dddddd"><b>Share Type</b></td><td>{{ r.type }}</td></tr>
+  <tr><td bgcolor="#dddddd"><b>New Suffix</b></td><td>{{ suffix }}</td></tr>
+  <tr><td bgcolor="#dddddd"><b>Initial Deposit</b></td><td>{{ money(r.deposit) }}</td></tr>
+</table>
+<br>
+<a href="/member?mid={{ m.member_id }}&amp;sid={{ sid }}">Return to Member Detail</a>
+{% endblock %}

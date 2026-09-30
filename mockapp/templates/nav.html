@@ -1,0 +1,11 @@
+{% extends "legacy.html" %}
+{% block body %}
+<table width="100%" cellpadding="3" cellspacing="0">
+  <tr><td bgcolor="{{ tenant.accent }}"><font color="#ffffff"><b>Functions</b></font></td></tr>
+  <tr><td><a href="/search?sid={{ sid }}" target="main">{{ labels.member_search }}</a></td></tr>
+  <tr><td><a href="/inquiry?sid={{ sid }}" target="main">Account Inquiry</a></td></tr>
+  <tr><td><a href="/reports?sid={{ sid }}" target="main">Reports</a></td></tr>
+  <tr><td><a href="/admin?sid={{ sid }}" target="main">Administration</a></td></tr>
+  <tr><td><a href="/home?sid={{ sid }}" target="main">Main Menu</a></td></tr>
+</table>
+{% endblock %}

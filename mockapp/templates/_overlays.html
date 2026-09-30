@@ -1,0 +1,23 @@
+{% if overlay == "security" %}
+<div id="ctl00_mc_pnlNotice" style="position:fixed; left:0; top:0; width:100%; height:100%; background-color:rgba(40,40,40,0.45); z-index:1000;">
+  <table align="center" width="420" cellpadding="14" cellspacing="0" style="margin-top:50px; background-color:#ffffff; border:2px solid #1f3a5f;">
+    <tr><td>
+      <font face="Arial, Helvetica, sans-serif" size="3"><b>Security Notice</b></font><br><br>
+      <font face="Arial, Helvetica, sans-serif" size="2">Access to member records is logged and monitored. Use of CoreOne is limited to authorized business purposes.</font><br><br>
+      <input type="button" value="Acknowledge" onclick="document.getElementById('ctl00_mc_pnlNotice').style.display='none';">
+    </td></tr>
+  </table>
+</div>
+{% elif overlay == "fraud" %}
+<div id="ctl00_mc_pnlAlert" style="position:fixed; left:0; top:0; width:100%; height:100%; background-color:rgba(90,0,0,0.40); z-index:1000;">
+  <table align="center" width="440" cellpadding="14" cellspacing="0" style="margin-top:50px; background-color:#fff7f7; border:3px solid #990000;">
+    <tr><td>
+      <font face="Arial, Helvetica, sans-serif" size="3" color="#990000"><b>Fraud Alert</b></font><br><br>
+      <font face="Arial, Helvetica, sans-serif" size="2">This member's account is flagged for review. A supervisor override is required before continuing.</font><br><br>
+      <input type="button" value="Supervisor Override" onclick="document.getElementById('ctl00_mc_pnlAlert').style.display='none';">
+      <input type="button" value="Cancel" onclick="window.location.href='/home?sid={{ sid }}';">
+    </td></tr>
+  </table>
+</div>
+{% endif %}
+{% if alert %}<script type="text/javascript">alert({{ alert|tojson }});</script>{% endif %}

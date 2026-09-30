@@ -1,0 +1,7 @@
+{% extends "legacy.html" %}
+{% from "_macros.html" import heading with context %}
+{% block body %}
+{{ heading(title_text) }}
+<font color="#cc0000"><b>{{ error }}</b></font><br><br>
+<a href="/home?sid={{ sid }}">Main Menu</a>
+{% endblock %}

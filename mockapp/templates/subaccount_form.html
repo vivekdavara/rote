@@ -1,0 +1,41 @@
+{% extends "legacy.html" %}
+{% from "_macros.html" import heading with context %}
+{% block body %}
+{{ heading("Open Sub-Account") }}
+<font size="2">Member #: {{ m.member_id }}</font><br><br>
+{% for e in errors %}<font color="#cc0000"><b>{{ e }}</b></font><br>{% endfor %}
+{% if errors %}<br>{% endif %}
+<form method="post" action="/subaccount/review?mid={{ m.member_id }}&amp;sid={{ sid }}">
+<input type="hidden" name="__VIEWSTATE" value="{{ viewstate }}">
+<table border="0" cellpadding="3" cellspacing="0">
+  <tr>
+    <td align="right">Share Type:</td>
+    <td>
+      <select name="{{ f.sub_type }}" id="{{ f.sub_type|replace('$', '_') }}">
+        <option value="">-- Select --</option>
+        {% for t in share_types %}<option{% if values.type == t %} selected{% endif %}>{{ t }}</option>{% endfor %}
+      </select>
+    </td>
+  </tr>
+  <tr><td align="right">Nickname:</td><td><input type="text" name="{{ f.sub_nick }}" value="{{ values.nick or '' }}" size="22" maxlength="30"></td></tr>
+  <tr><td align="right">Initial Deposit:</td><td><input type="text" name="{{ f.sub_deposit }}" value="{{ values.deposit or '' }}" size="10"></td></tr>
+  <tr>
+    <td align="right">Funding Account:</td>
+    <td>
+      <select name="{{ f.sub_funding }}">
+        <option value="">-- Select --</option>
+        {% for a in funding %}<option value="{{ a.suffix }}"{% if values.funding == a.suffix %} selected{% endif %}>{{ a.suffix }} - {{ a.description }}</option>{% endfor %}
+      </select>
+    </td>
+  </tr>
+  <tr>
+    <td align="right"><input type="checkbox" name="{{ f.sub_disclosure }}" value="1"{% if values.disclosure %} checked{% endif %}></td>
+    <td>Truth-in-Savings disclosure provided to member</td>
+  </tr>
+  <tr>
+    <td></td>
+    <td><input type="submit" value="Continue"> <input type="button" value="Cancel" onclick="window.location.href='/member?mid={{ m.member_id }}&amp;sid={{ sid }}';"></td>
+  </tr>
+</table>
+</form>
+{% endblock %}

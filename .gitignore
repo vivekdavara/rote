@@ -16,5 +16,8 @@ runs/
 traces/
 test-results/
 
+# Editor / agent tooling
+.claude/
+
 # OS
 .DS_Store

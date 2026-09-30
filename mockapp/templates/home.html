@@ -1,0 +1,11 @@
+{% extends "legacy.html" %}
+{% from "_macros.html" import heading, subheading with context %}
+{% block body %}
+{{ heading("Main Menu") }}
+<font size="2">Welcome, {{ user }}. Select a function from the menu on the left.</font><br><br>
+{{ subheading("Bulletins") }}
+<table border="0" cellpadding="2" cellspacing="0">
+  <tr><td valign="top">&bull;</td><td>Branch hours are extended on Saturdays through the end of the quarter.</td></tr>
+  <tr><td valign="top">&bull;</td><td>Holiday Club enrollment is open. Minimum opening deposit is $5.00.</td></tr>
+</table>
+{% endblock %}

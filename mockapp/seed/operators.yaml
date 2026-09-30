@@ -1,0 +1,4 @@
+# Operator accounts for the local mock. Training credentials only (see .env.example).
+- user: svc_rote
+  password: training-only-2026
+  role: teller

@@ -1,0 +1,29 @@
+{% extends "legacy.html" %}
+{% block head %}<script type="text/javascript">if (window.top !== window.self) { window.top.location.href = window.self.location.href; }</script>{% endblock %}
+{% block body %}
+<br><br>
+<form method="post" action="/login">
+<input type="hidden" name="__VIEWSTATE" value="{{ viewstate }}">
+<table align="center" width="440" border="1" cellspacing="0" cellpadding="0" bordercolor="#8899aa">
+  <tr><td>
+    <table width="100%" cellpadding="5" cellspacing="0" bgcolor="{{ tenant.accent }}">
+      <tr><td><font color="#ffffff" size="3"><b>CoreOne Member Servicing</b></font></td></tr>
+    </table>
+    <table width="100%" cellpadding="6" cellspacing="0" bgcolor="#ffffff">
+      <tr><td colspan="2"><font size="2">{{ tenant.display_name }}</font></td></tr>
+      {% if expired %}<tr><td colspan="2"><font color="#cc0000"><b>Your session has expired. Please sign on again.</b></font></td></tr>{% endif %}
+      {% if failed %}<tr><td colspan="2"><font color="#cc0000"><b>Invalid user ID or password.</b></font></td></tr>{% endif %}
+      <tr>
+        <td align="right" width="35%"><font size="2">User ID:</font></td>
+        <td><input type="text" name="{{ f.login_user }}" id="{{ f.login_user|replace('$', '_') }}" size="20"></td>
+      </tr>
+      <tr>
+        <td align="right"><font size="2">Password:</font></td>
+        <td><input type="password" name="{{ f.login_pass }}" id="{{ f.login_pass|replace('$', '_') }}" size="20"></td>
+      </tr>
+      <tr><td></td><td><input type="submit" value="Sign On"></td></tr>
+    </table>
+  </td></tr>
+</table>
+</form>
+{% endblock %}
