@@ -18,7 +18,7 @@ test:
 	$(BIN)/pytest -q
 
 lint:
-	$(BIN)/ruff check src mockapp tests
+	$(BIN)/ruff check src mockapp tests spikes
 
 typecheck:
 	$(BIN)/mypy src/rote/schema src/rote/replay

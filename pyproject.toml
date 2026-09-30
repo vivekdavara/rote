@@ -42,6 +42,7 @@ packages = ["src/rote", "mockapp"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 markers = ["integration: drives a real browser against the mock app"]
 
 [tool.ruff]

@@ -17,7 +17,7 @@ jobs:
           pip install -e ".[dev,mcp]"
           playwright install --with-deps chromium
       - name: Lint
-        run: ruff check src mockapp tests
+        run: ruff check src mockapp tests spikes
       - name: Type-check schema and replay engine
         run: mypy src/rote/schema src/rote/replay
       - name: Test (no API key; replay, mock app, cassette-driven discovery)

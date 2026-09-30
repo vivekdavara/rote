@@ -21,3 +21,6 @@ test-results/
 
 # OS
 .DS_Store
+
+# Spike transcripts
+spikes/out/
