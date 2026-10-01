@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "capability_id": "coreone.member.get_savings_balance",
+  "tenant": "harbor",
+  "model": null,
+  "recorded_at": "2026-10-01T12:00:00Z",
+  "source": "hand-written script (test fixture, not a model run)",
+  "entries": [
+    {
+      "step": 1,
+      "tool": "click",
+      "args": {"rationale": "Open member search from the navigation.", "expect": "Last Name", "notes": null},
+      "target": {"frame": "nav", "role": "link", "name": "Member Search", "nth": 0}
+    },
+    {
+      "step": 2,
+      "tool": "type_text",
+      "args": {"text": "{{inputs.member_id}}", "rationale": "Enter the member number.", "expect": null, "notes": null},
+      "target": {"frame": "main", "role": "textbox", "label": "Member Number", "nth": 0}
+    },
+    {
+      "step": 3,
+      "tool": "click",
+      "args": {"rationale": "Run the search.", "expect": "Search Results", "notes": null},
+      "target": {"frame": "main", "role": "button", "name": "Search", "nth": 0}
+    },
+    {
+      "step": 4,
+      "tool": "click",
+      "args": {"rationale": "Open the result row for this member.", "expect": "Member Detail", "notes": null},
+      "target": {"frame": "main", "role": "link", "name": "View", "row_has": ["{{inputs.member_id}}"], "nth": 0}
+    },
+    {
+      "step": 5,
+      "tool": "extract",
+      "args": {"output_name": "savings_balance", "rationale": "Read the Share Savings balance.", "notes": null},
+      "target": {"frame": "main", "role": "cell", "column": "Balance", "row_first": "Share Savings", "nth": 0}
+    },
+    {
+      "step": 6,
+      "tool": "finish",
+      "args": {"success_description": "Member Detail shows the Share Savings balance.", "rationale": "Done."}
+    }
+  ]
+}

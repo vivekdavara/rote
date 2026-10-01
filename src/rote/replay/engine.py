@@ -18,36 +18,26 @@ keeps it that way.
 from __future__ import annotations
 
 import asyncio
-import re
 import time
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Literal
-from urllib.parse import urlsplit
 
-from playwright.async_api import Browser, Dialog, Playwright, Route
+from playwright.async_api import Browser, Playwright
 from playwright.async_api import Error as PlaywrightError
 from pydantic import BaseModel
 
 from rote.control.protocol import Escalator
-from rote.evidence.runlog import RunLog, new_run_id
-from rote.policy.gate import PolicyGate
-from rote.redaction.redactor import Redactor, load_key
+from rote.evidence.runlog import new_run_id
 from rote.registry.approvals import find_approval, load_approvals
 from rote.registry.store import Workspace
 from rote.replay.errors import BusinessOutcome, HardFailure, NeedsHuman, PreviewReady, Rejected, Restart
 from rote.replay.inputs import validate_inputs
-from rote.replay.versions import in_range
+from rote.runtime import Runtime
 from rote.schema.capability import (
     Capability,
-    CheckStep,
-    ClickStep,
     ExtractStep,
-    FillStep,
     PressStep,
-    SelectStep,
     Step,
 )
 from rote.schema.codes import TAXONOMY
@@ -65,11 +55,8 @@ from rote.schema.target import Target
 from rote.secrets import resolve_secrets
 from rote.surface.web import actions
 from rote.surface.web.conditions import ConditionEvaluator, describe
-from rote.surface.web.masking import masked_screenshot
-from rote.surface.web.observe import observe
-from rote.surface.web.observe import render as render_observation
 from rote.surface.web.resolver import ResolutionFailure, Resolved, Resolver, element_facts, hit_test
-from rote.surface.web.session import BrowserOptions, WebSession, call
+from rote.surface.web.session import WebSession
 
 Mode = Literal["run", "preview", "commit"]
 
@@ -122,10 +109,13 @@ class ReplayEngine:
         self.limits = policy.limits
         self.step_timeout = self.options.step_timeout_ms or self.limits.step_timeout_ms
 
-        self.redactor = Redactor(load_key(workspace.root))
         self.run_id = run_id or new_run_id("replay")
-        self.log = RunLog(workspace.runs, self.run_id, self.redactor)
-        self.gate = PolicyGate(policy, tenant.template_vars())
+        self.rt = Runtime(workspace, tenant, profile, policy, run_id=self.run_id,
+                          hold_unknown_dialogs=self.options.attended and escalator is not None)
+        self.rt.on_known_dialog = self._known_dialog
+        self.redactor = self.rt.redactor
+        self.log = self.rt.log
+        self.gate = self.rt.gate
         self.result = RunResult(
             run_id=self.run_id,
             capability=capability.id,
@@ -140,10 +130,7 @@ class ReplayEngine:
         self.completed: list[str] = []
         self.irreversible_done = False
         self.current_step: str | None = None
-        self.pending_dialog: Dialog | None = None
-        self.dialog_message: str | None = None
         self._recovery_counts: dict[tuple[str, str], int] = {}
-        self._background: list[asyncio.Future[Any]] = []
         self._inputs: dict[str, str] = {}
         self._secrets: dict[str, str] = {}
         self.web: WebSession
@@ -165,7 +152,12 @@ class ReplayEngine:
         )
         try:
             self._preflight()
-            async with self._session():
+            async with self.rt.session(playwright=self.playwright, browser=self.browser,
+                                       headless=self.options.headless) as web:
+                self.web = web
+                context = {"inputs": self._inputs, "tenant": self.tenant.template_vars()}
+                self.resolver = Resolver(web, context, self.tenant.labels)
+                self.cond = ConditionEvaluator(self.resolver, self.outputs)
                 await self._enter()
                 await self._execute()
         except Rejected as exc:
@@ -180,8 +172,7 @@ class ReplayEngine:
             self.result.status = "failed"
             self.result.error = exc.error
         finally:
-            for task in self._background:
-                task.cancel()
+            self.result.warnings.extend(w for w in self.rt.warnings if w not in self.result.warnings)
             self.result.finished_at = datetime.now(UTC)
             self.result.duration_ms = int((time.monotonic() - started) * 1000)
             if self.result.status in ("succeeded", "preview"):
@@ -231,98 +222,14 @@ class ReplayEngine:
 
     # ================================================================== session
 
-    @asynccontextmanager
-    async def _session(self) -> AsyncIterator[None]:
-        browser_options = BrowserOptions(headless=self.options.headless)
-        if self.browser is not None:
-            web = await WebSession.open(self.browser, browser_options)
-        elif self.playwright is not None:
-            web = await WebSession.launch(self.playwright, browser_options)
-        else:
-            raise RuntimeError("ReplayEngine needs a Playwright instance or a browser")
-        self.web = web
-        context = {"inputs": self._inputs, "tenant": self.tenant.template_vars()}
-        self.resolver = Resolver(web, context, self.tenant.labels)
-        self.cond = ConditionEvaluator(self.resolver, self.outputs)
-        await web.context.route("**/*", self._route)
-        web.page.on("dialog", self._on_dialog)
-        try:
-            yield
-        finally:
-            await web.close()
-
-    async def _route(self, route: Route) -> None:
-        url = route.request.url
-        if self.gate.origin_allowed(url):
-            await route.continue_()
-            return
-        self.log.event("network_blocked", url=url, rule="allowed_origins")
-        await route.abort("blockedbyclient")
-
-    def _on_dialog(self, dialog: Dialog) -> None:
-        message = dialog.message
-        rule = next((r for r in self.profile.dialogs if r.message_contains in message), None)
-        if rule is not None:
-            handler = dialog.accept() if rule.respond == "accept" else dialog.dismiss()
-            self._background.append(asyncio.ensure_future(handler))
-            step = self.current_step
-            self.result.recoveries.append(
-                RecoveryRecord(code="KNOWN_DIALOG", step_id=step, detail=f"{rule.respond}: {rule.message_contains}")
-            )
-            self.log.event("dialog", message=message, handled=rule.respond, rule=rule.message_contains)
-            return
-        self.dialog_message = message
-        self.pending_dialog = dialog
-        self.log.event("dialog", message=message, handled="unknown")
-        if not (self.options.attended and self.escalator is not None):
-            self._background.append(asyncio.ensure_future(dialog.dismiss()))
-
     # ============================================================ entry & login
 
     async def _enter(self) -> None:
-        await self.web.page.goto(self.tenant.base_url.rstrip("/") + self.profile.entry_path)
-        await self._login()
-        await self._read_version()
+        await self.rt.enter(self._secrets, step_timeout_ms=self.step_timeout, versions=self.capability.product.versions)
 
-    async def _login(self) -> None:
-        context = {"secrets": self._secrets, "tenant": self.tenant.template_vars()}
-        login_resolver = Resolver(self.web, context, self.tenant.labels)
-        for step in self.profile.login:
-            target = getattr(step, "target", None)
-            if target is None:
-                continue
-            try:
-                resolved = await login_resolver.resolve(target, self.step_timeout)
-            except ResolutionFailure as exc:
-                raise HardFailure(self._error("LOGIN_FAILED", f"login step {step.id}: {exc}", None)) from exc
-            await self._perform(step, resolved, login_resolver, secret=True)
-        if not await self._poll(self.profile.login_success, self.step_timeout):
-            raise HardFailure(self._error(
-                "LOGIN_FAILED", "sign-on did not reach the home screen", None,
-                expected=describe(self.profile.login_success), evidence=await self._capture_failure(),
-            ))
-        self.log.event("checkpoint", step="login", condition=describe(self.profile.login_success), held=True)
-
-    async def _read_version(self) -> None:
-        fingerprint = self.profile.fingerprint
-        frame = self.web.frame(fingerprint.frame) if fingerprint else None
-        if fingerprint is None or frame is None:
-            return
-        try:
-            text: str = await call(frame, "bodyText")
-        except PlaywrightError:
-            return
-        match = re.search(fingerprint.version_regex, text)
-        if match is None:
-            self.result.warnings.append("could not read the product version from the screen")
-            return
-        observed = match.group(1)
-        if in_range(observed, self.capability.product.versions):
-            self.log.event("note", product_version=observed)
-            return
-        note = f"product version {observed} is outside the capability's range {self.capability.product.versions}"
-        self.result.warnings.append(note)
-        self.log.event("drift", kind="product_version", observed=observed, expected=self.capability.product.versions)
+    def _known_dialog(self, message: str, response: str) -> None:
+        self.result.recoveries.append(RecoveryRecord(code="KNOWN_DIALOG", step_id=self.current_step,
+                                                     detail=f"{response}: {message}"))
 
     # ================================================================ execution
 
@@ -443,27 +350,12 @@ class ReplayEngine:
 
     # ------------------------------------------------------------------ act
 
-    async def _perform(self, step: Step, resolved: Resolved, resolver: Resolver, *, secret: bool = False) -> None:
-        element = resolved.element
-        detail: dict[str, Any] = {"step": step.id, "action": step.action, "strategy": resolved.strategy,
-                                  "frame": resolved.frame.name or "top"}
+    async def _perform(self, step: Step, resolved: Resolved, resolver: Resolver) -> None:
         try:
-            if isinstance(step, ClickStep):
-                await actions.click(element)
-            elif isinstance(step, FillStep):
-                await actions.fill(element, resolver.text(step.value))
-                detail["value"] = "[secret]" if secret else step.value  # the template, never the value
-            elif isinstance(step, SelectStep):
-                detail["matched_by"] = await actions.select(element, resolver.text(step.option))
-                detail["option"] = step.option
-            elif isinstance(step, CheckStep):
-                await actions.set_checked(element, step.checked)
-            elif isinstance(step, PressStep):
-                await actions.press(element, step.key)
+            await self.rt.perform(step, resolved, resolver)
         except (PlaywrightError, actions.OptionNotFound) as exc:
             raise NeedsHuman("UNEXPECTED_STATE", f"step {step.id}: {step.action} failed: {str(exc).splitlines()[0]}",
                              step_id=step.id, observed=await self._observed()) from exc
-        self.log.event("action_executed", **detail)
 
     async def _extract(self, step: ExtractStep, resolved: Resolved) -> None:
         spec = self.capability.outputs[step.output]
@@ -532,13 +424,7 @@ class ReplayEngine:
                              expected=expected, observed=await self._observed())
 
     async def _poll(self, condition: BaseModel, timeout_ms: int) -> bool:
-        deadline = time.monotonic() + timeout_ms / 1000
-        while True:
-            if await self.cond.holds(condition):
-                return True
-            if time.monotonic() >= deadline:
-                return False
-            await asyncio.sleep(0.1)
+        return await self.rt.poll(self.cond, condition, timeout_ms)
 
     # ------------------------------------------------------------- interrupts
 
@@ -556,8 +442,8 @@ class ReplayEngine:
 
     async def _check_interrupts(self, step: Step | None, *, after: bool) -> bool:
         step_id = step.id if step else None
-        if self.pending_dialog is not None:
-            raise NeedsHuman("UNKNOWN_DIALOG", f"unrecognized dialog: {self.dialog_message!r}", step_id=step_id)
+        if self.rt.pending_dialog is not None:
+            raise NeedsHuman("UNKNOWN_DIALOG", f"unrecognized dialog: {self.rt.dialog_message!r}", step_id=step_id)
         for spec in self.profile.interrupts:
             if not await self.cond.holds(spec.when):
                 continue
@@ -645,62 +531,14 @@ class ReplayEngine:
         )
 
     async def _observed(self) -> dict[str, Any]:
-        frames = []
-        for frame in self.web.page.frames:
-            try:
-                summary = await call(frame, "summary")
-            except PlaywrightError:
-                continue
-            if frame != self.web.page.main_frame and not (summary["headings"] or summary["messages"]):
-                continue
-            frames.append({
-                "frame": frame.name or "top",
-                "path": urlsplit(summary["url"]).path,
-                "headings": summary["headings"],
-                "messages": summary["messages"],
-            })
-        return {"frames": frames}
-
-    async def _collect_screen_pii(self) -> None:
-        labels = self.profile.redaction.mask_labels
-        if not labels:
-            return
-        for frame in self.web.page.frames:
-            try:
-                for item in await call(frame, "labeledValues", labels):
-                    self.redactor.register(item["text"], re.sub(r"\W+", "_", item["label"].lower()).strip("_"))
-            except PlaywrightError:
-                continue
-
-    async def _screenshot(self) -> bytes:
-        await self._collect_screen_pii()
-        return await masked_screenshot(
-            self.web.page,
-            mask_labels=self.profile.redaction.mask_labels,
-            mask_columns=self.profile.redaction.mask_columns,
-            sensitive_values=self.redactor.known_values(),
-        )
+        return await self.rt.observed()
 
     async def _step_evidence(self, step: Step) -> None:
-        if not self.options.screenshots:
-            return
-        try:
-            image = await self._screenshot()
-        except PlaywrightError:
-            return
-        self.log.save_bytes(f"screens/{len(self.result.steps):02d}-{step.id}.png", image)
+        if self.options.screenshots:
+            await self.rt.save_screenshot(f"screens/{len(self.result.steps):02d}-{step.id}.png")
 
     async def _capture_failure(self) -> list[str]:
-        paths: list[str] = []
-        try:
-            paths.append(self.log.save_bytes("failure/screenshot.png", await self._screenshot()))
-            observation = await observe(self.web.page, tag=False, screenshot=False, max_text=1500)
-            await self._collect_screen_pii()
-            snapshot = self.log.write_text("failure/snapshot.txt", render_observation(observation))
-            paths.append(str(snapshot.relative_to(self.log.dir)))
-        except PlaywrightError:
-            pass
-        return paths
+        return await self.rt.capture_failure()
 
     def _build_preview(self) -> None:
         values = {name: self.outputs.get(name) for name in self.capability.preview_outputs}

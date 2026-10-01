@@ -1,0 +1,33 @@
+# Goal spec for discovery: the contract we want, not the steps.
+capability_id: coreone.member.get_savings_balance
+summary: Look up a member by member number and return the current Share Savings balance.
+goal: Look up member {member_id} and read their current Share Savings balance.
+tenant: harbor
+product: coreone
+product_versions: ">=4.2,<5"
+
+inputs:
+  member_id:
+    type: string
+    description: Six-digit member number.
+    pattern: "^[0-9]{6}$"
+    sensitive: member_id
+    examples: ["100234", "100517"]   # synthetic; the first drives discovery, the second verifies replay
+
+outputs:
+  savings_balance:
+    type: money
+    description: Current balance of the member's Share Savings account.
+    cardinality: one
+    sensitive: balance
+
+# Inputs that should end in a declared business outcome. Discovery replays each one,
+# takes the message the app shows as the outcome's detector, and keeps it only if it
+# fires here and stays silent on every happy-path screen.
+negative_examples:
+  - code: MEMBER_NOT_FOUND
+    description: No member has this member number.
+    inputs: {member_id: "999999"}
+  - code: ACCESS_RESTRICTED
+    description: The member record is restricted (for example, an employee account).
+    inputs: {member_id: "100900"}

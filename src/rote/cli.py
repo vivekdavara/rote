@@ -168,6 +168,115 @@ def run(
     raise typer.Exit({"succeeded": 0, "business_outcome": 0, "preview": 0, "rejected": 2}.get(result.status, 1))
 
 
+# ------------------------------------------------------------------------- discovery
+
+
+@app.command()
+def discover(
+    spec_path: Path = typer.Argument(..., help="Goal spec, e.g. specs/get_savings_balance.yaml"),
+    live: bool = typer.Option(False, "--live", help="Drive the live model (needs ANTHROPIC_API_KEY)."),
+    cassette: Path | None = typer.Option(None, help="Replay recorded decisions instead of calling a model."),
+    attended: bool = typer.Option(False, help="An operator is available for approvals and handoffs."),
+    headed: bool = typer.Option(False, help="Show the browser window."),
+    effort: str = typer.Option("high", help="Model effort: low | medium | high | xhigh | max."),
+    base_url: str | None = typer.Option(None, help="Override the tenant's base URL."),
+    max_steps: int | None = typer.Option(None, help="Step budget (default: the tenant policy's)."),
+) -> None:
+    """Let a model complete the goal once, then compile, verify and save the capability."""
+    from playwright.async_api import async_playwright
+
+    from rote.discovery.agent import DiscoveryAgent, DiscoveryOptions
+    from rote.discovery.cassette import load_cassette
+    from rote.discovery.planner import AnthropicPlanner, CassettePlanner, Planner
+    from rote.registry.store import Workspace
+    from rote.schema.spec import load_spec
+
+    if live == (cassette is not None):
+        raise typer.BadParameter("choose exactly one of --live or --cassette PATH")
+    spec = load_spec(spec_path)
+    workspace = Workspace(base_url_overrides={spec.tenant: base_url} if base_url else {})
+    planner: Planner = (CassettePlanner(load_cassette(cassette), spec.example(0)) if cassette
+                        else AnthropicPlanner(effort=effort))
+    options = DiscoveryOptions(attended=attended, headless=not headed, max_steps=max_steps)
+
+    async def go() -> Any:
+        async with async_playwright() as pw:
+            return await DiscoveryAgent(workspace, spec, planner, options, playwright=pw).run()
+
+    result = asyncio.run(go())
+    style = "green" if result.status == "compiled" else "red"
+    console.print(f"[bold {style}]{result.status}[/]  {spec.capability_id}  steps={result.steps_taken}  "
+                  f"planner={planner.name}")
+    if result.reason:
+        console.print(f"reason: {escape(result.reason)}")
+    if result.usage.get("calls"):
+        u = result.usage
+        console.print(f"model calls={u['calls']} input={u['input']} cache_read={u['cache_read']} output={u['output']}")
+    if result.capability_path:
+        console.print(f"artifact: {result.capability_path}")
+    if result.verification:
+        v = result.verification
+        console.print(f"verify-replay (second example): {v.status} "
+                      f"{escape(json.dumps(v.outputs)) if v.outputs else (v.error.code if v.error else '')}")
+    for outcome in result.outcomes:
+        detail = f"after {outcome.after_step}: {outcome.detector!r}" if outcome.status == "learned" else outcome.detail
+        console.print(f"outcome {outcome.code}: {outcome.status} ({escape(detail)})")
+    for note in result.notes:
+        console.print(f"[dim]note: {escape(note)}[/dim]")
+    console.print(f"[dim]evidence: {workspace.runs / result.run_id}  cassette: {result.cassette_path}[/dim]")
+    if result.status == "compiled":
+        console.print(f"next: rote review {spec.capability_id}   then   rote approve {spec.capability_id} --reviewer NAME")
+    raise typer.Exit(0 if result.status == "compiled" else 1)
+
+
+@app.command()
+def doctor(probe: bool = typer.Option(False, help="Make a one-token API call to check model credentials.")) -> None:
+    """Check the local setup: browser, workspace, mock app, secrets, model credentials."""
+    import os
+    import sys
+
+    import httpx
+
+    from rote.registry.store import Workspace
+    from rote.secrets import resolve_secrets
+
+    workspace = Workspace()
+    checks: list[tuple[str, bool, str]] = []
+    checks.append(("python", sys.version_info >= (3, 11), sys.version.split()[0]))
+    for folder in ("apps", "tenants", "policies", "specs"):
+        checks.append((f"workspace/{folder}", (workspace.root / folder).is_dir(), str(workspace.root / folder)))
+    for tenant_file in sorted((workspace.root / "tenants").glob("*.yaml")):
+        tenant = workspace.tenant(tenant_file.stem)
+        try:
+            status = httpx.get(f"{tenant.base_url}/login", timeout=3).status_code
+            checks.append((f"tenant {tenant.id}", status == 200, f"{tenant.base_url} -> HTTP {status}"))
+        except httpx.HTTPError as exc:
+            checks.append((f"tenant {tenant.id}", False, f"{tenant.base_url} unreachable ({type(exc).__name__}); "
+                           "start it with `rote app`"))
+        _, missing = resolve_secrets(tenant, workspace.root)
+        checks.append((f"secrets {tenant.id}", not missing, "ok" if not missing else ", ".join(missing)))
+    key = bool(os.environ.get("ANTHROPIC_API_KEY"))
+    token = bool(os.environ.get("ANTHROPIC_AUTH_TOKEN"))
+    base = os.environ.get("ANTHROPIC_BASE_URL")
+    checks.append(("model credentials", key or token,
+                   "ANTHROPIC_API_KEY set" if key else ("ANTHROPIC_AUTH_TOKEN set" if token else
+                                                        "none (only live discovery needs them)")))
+    checks.append(("model endpoint", True, base or "default (api.anthropic.com)"))
+    if probe:
+        try:
+            import anthropic
+
+            from rote.discovery.prompts import MODEL
+
+            reply = anthropic.Anthropic().messages.create(model=MODEL, max_tokens=1,
+                                                          messages=[{"role": "user", "content": "ping"}])
+            checks.append(("model probe", True, f"served by {reply.model}"))
+        except Exception as exc:  # noqa: BLE001 - doctor reports whatever went wrong
+            checks.append(("model probe", False, f"{type(exc).__name__}: {str(exc)[:160]}"))
+    for name, ok, detail in checks:
+        console.print(f"{'[green]ok[/]  ' if ok else '[red]FAIL[/]'} {name:<22} {escape(detail)}")
+
+
 # ----------------------------------------------------------------- review, approve
 
 

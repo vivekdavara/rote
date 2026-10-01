@@ -55,6 +55,7 @@ TAXONOMY: dict[str, CodeInfo] = {
     "PERMISSION_DENIED": CodeInfo(
         "hard_failure", False, "The service account lacks a permission: a configuration problem, not a business result."
     ),
+    "APP_UNREACHABLE": CodeInfo("hard_failure", True, "The application could not be reached at all."),
     "LOGIN_FAILED": CodeInfo("hard_failure", False, "The product-profile login flow did not reach the home state."),
     "PREVIEW_MISMATCH": CodeInfo(
         "hard_failure", False, "Values on the review screen differ from what the preview token approved."
