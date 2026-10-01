@@ -92,7 +92,7 @@ class EvaluateTimeout(Error):
 CALL_TIMEOUT_S = 5.0
 
 
-async def _bounded(awaitable: Any) -> Any:
+async def bounded(awaitable: Any) -> Any:
     try:
         return await asyncio.wait_for(awaitable, timeout=CALL_TIMEOUT_S)
     except TimeoutError as exc:
@@ -107,14 +107,14 @@ async def call(frame: Frame, function: str, *args: Any) -> Any:
     """
     script = f"(args) => window.__rote.{function}(...args)"
     try:
-        return await _bounded(frame.evaluate(script, list(args)))
+        return await bounded(frame.evaluate(script, list(args)))
     except EvaluateTimeout:
         raise
     except Error as exc:
         if "__rote" not in str(exc):
             raise
-        await _bounded(frame.evaluate(_LIB_EXPRESSION))
-        return await _bounded(frame.evaluate(script, list(args)))
+        await bounded(frame.evaluate(_LIB_EXPRESSION))
+        return await bounded(frame.evaluate(script, list(args)))
 
 
 async def call_handle(frame: Frame, function: str, *args: Any) -> JSHandle:

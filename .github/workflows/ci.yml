@@ -7,6 +7,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,4 +22,4 @@ jobs:
       - name: Type-check schema and replay engine
         run: mypy src/rote/schema src/rote/replay
       - name: Test (no API key; replay, mock app, cassette-driven discovery)
-        run: pytest -q
+        run: pytest -q --durations=15

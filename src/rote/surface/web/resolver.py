@@ -21,7 +21,7 @@ from playwright.async_api import ElementHandle, Error, Frame, JSHandle
 
 from rote.schema.target import CssLocator, LabelLocator, Locator, RoleLocator, TableCellLocator, Target
 from rote.schema.templating import render
-from rote.surface.web.session import WebSession, call, call_handle
+from rote.surface.web.session import WebSession, bounded, call, call_handle
 
 
 @dataclass
@@ -126,9 +126,9 @@ class Resolver:
             found: list[tuple[Frame, ElementHandle]] = []
             for frame in frames:
                 try:
-                    found.extend((frame, element) for element in await self.candidates(frame, locator))
+                    found.extend((frame, element) for element in await bounded(self.candidates(frame, locator)))
                 except Error:
-                    continue  # frame navigating or detached: not ready yet
+                    continue  # frame navigating, detached, or blocked by a native dialog: not ready yet
             attempts.append(Attempt(locator.by, len(found)))
             if len(found) == 1 or (many and found):
                 frame = found[0][0]
@@ -215,10 +215,12 @@ def describe_target(target: Target) -> str:
 
 
 async def element_facts(resolved: Resolved) -> dict[str, Any]:
-    facts: dict[str, Any] = await resolved.frame.evaluate("el => window.__rote.facts(el)", resolved.element)
+    facts: dict[str, Any] = await bounded(resolved.frame.evaluate("el => window.__rote.facts(el)", resolved.element))
     return facts
 
 
 async def hit_test(resolved: Resolved) -> dict[str, Any]:
-    result: dict[str, Any] = await resolved.frame.evaluate("el => window.__rote.hitTest(el)", resolved.element)
+    result: dict[str, Any] = await bounded(
+        resolved.frame.evaluate("el => window.__rote.hitTest(el)", resolved.element)
+    )
     return result
