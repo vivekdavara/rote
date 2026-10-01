@@ -101,11 +101,13 @@ def _print_result(result: Any, workspace_root: Path) -> None:
              "failed": "red", "needs_intervention": "magenta"}.get(result.status, "white")
     console.print(f"[bold {style}]{result.status}[/]  {result.capability}@{result.version}  tenant={result.tenant}"
                   f"  {result.duration_ms} ms")
-    if result.outputs:
+    if result.outputs and not result.preview:
         console.print("outputs:", escape(json.dumps(result.outputs)))
     if result.preview:
-        console.print("preview:", escape(json.dumps(result.preview.values)))
-        console.print(f"commit token: {result.preview.commit_token}  (expires {result.preview.expires_at:%H:%M:%S})")
+        console.print("review values:", escape(json.dumps(result.preview.values)))
+        console.print(f"expires {result.preview.expires_at:%H:%M:%S}. To commit exactly these values, pass "
+                      "--commit-token and an --idempotency-key:")
+        console.print(result.preview.commit_token, soft_wrap=True, markup=False)  # never wrapped: it gets copied
     if result.outcome:
         console.print(f"business outcome: [bold]{result.outcome.code}[/]  {result.outcome.message or ''}")
     if result.error:

@@ -92,3 +92,33 @@ async def test_discovery_end_to_end(discovery_workspace: Workspace, browser: Bro
         body = path.read_text()
         for value in ("100234", "100517", "999999", "100900", "1234.56", "Avery Quill", "12 Sample Lane"):
             assert value not in body, f"{value} leaked into {path.name}"
+
+
+async def test_discovering_an_irreversible_capability(discovery_workspace: Workspace, browser: Browser,
+                                                      mock: MockServer) -> None:
+    spec = load_spec(discovery_workspace.root / "specs" / "open_sub_account.yaml")
+    cassette = load_cassette(FIXTURES / "cassettes" / "open_sub_account.scripted.json")
+    agent = DiscoveryAgent(discovery_workspace, spec, CassettePlanner(cassette, spec.example(0)), DiscoveryOptions(),
+                           browser=browser)
+    result = await agent.run()
+    assert result.status == "compiled", result.reason
+    capability = result.capability
+    assert capability.side_effects == "irreversible"
+    assert capability.preview_outputs == ["review_share_type", "review_deposit", "review_funding_account"]
+    confirm = next(s for s in capability.steps if s.effect == "irreversible")
+    assert confirm.target.locators[0].model_dump(exclude_none=True) == {"by": "role", "role": "button",
+                                                                        "name": "Confirm", }
+    funding = next(s for s in capability.steps if getattr(s, "option", None) and "funding" in s.option)
+    assert funding.option == "{{inputs.funding_suffix}}"  # bound by value, not "S00 - Primary Savings"
+
+    # Discovery committed once (with the recorded approval); verification only previewed.
+    assert mock.state()["harbor"]["commits"] == 1
+    assert result.verification.status == "preview"
+    assert result.verification.preview.values["review_share_type"] == "Regular Savings"
+    assert result.verification.preview.values["review_funding_account"] == "S10 - Everyday Checking"
+
+    # Two negative examples with one code: a single outcome whose detector covers both messages.
+    rejected = capability.outcomes["VALIDATION_REJECTED"]
+    assert rejected.after_step == next(s.id for s in capability.steps if getattr(s, "expect", None) is not None
+                                       and "review" in str(s.expect.model_dump()))
+    assert len(rejected.when.any) == 2

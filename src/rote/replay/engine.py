@@ -29,10 +29,13 @@ from pydantic import BaseModel
 
 from rote.control.protocol import Escalator, OperatorResolution
 from rote.evidence.runlog import new_run_id
+from rote.redaction.redactor import load_key
 from rote.registry.approvals import find_approval, load_approvals
 from rote.registry.store import Workspace
+from rote.replay import commit
 from rote.replay.errors import BusinessOutcome, HardFailure, NeedsHuman, PreviewReady, Rejected, Restart
 from rote.replay.inputs import validate_inputs
+from rote.replay.ledger import Ledger
 from rote.runtime import Runtime
 from rote.schema.capability import (
     Capability,
@@ -136,6 +139,11 @@ class ReplayEngine:
         self.current_step: str | None = None
         self._recovery_counts: dict[tuple[str, str], int] = {}
         self._escalations: dict[str, int] = {}
+        self._ledger = Ledger(workspace.root)
+        self._signing_key = load_key(workspace.root, "signing", "ROTE_SIGNING_KEY")
+        self._claims: commit.TokenClaims | None = None
+        self._claimed: str | None = None
+        self._replayed: RunResult | None = None
         self._inputs: dict[str, str] = {}
         self._secrets: dict[str, str] = {}
         self.web: WebSession
@@ -157,6 +165,9 @@ class ReplayEngine:
         )
         try:
             self._preflight()
+            if self._replayed is not None:
+                self.result = self._replayed  # the recorded result for this idempotency key
+                return self.result
             async with self.rt.session(playwright=self.playwright, browser=self.browser,
                                        headless=self.options.headless) as web:
                 self.web = web
@@ -180,8 +191,13 @@ class ReplayEngine:
             self.result.warnings.extend(w for w in self.rt.warnings if w not in self.result.warnings)
             self.result.finished_at = datetime.now(UTC)
             self.result.duration_ms = int((time.monotonic() - started) * 1000)
-            if self.result.status in ("succeeded", "preview"):
+            if self._replayed is None and self.result.status in ("succeeded", "preview"):
                 self.result.outputs = dict(self.outputs)
+            if self._claimed:
+                if self.irreversible_done or self.result.commit_state != "none":
+                    self._ledger.record(self.capability.id, self.tenant.id, self._claimed, self.result)
+                else:
+                    self._ledger.release(self.capability.id, self.tenant.id, self._claimed)
             self.log.write_json("result.json", self.result.model_dump(mode="json"))
             code = self.result.error.code if self.result.error else None
             code = code or (self.result.outcome.code if self.result.outcome else None)
@@ -220,10 +236,41 @@ class ReplayEngine:
             self.options.mode = "preview"
             self.result.warnings.append("irreversible capability: ran in preview mode; committing needs a preview token")
 
+        if self.options.mode == "commit":
+            self._preflight_commit()
+
         secrets, missing = resolve_secrets(self.tenant, self.workspace.root)
         if missing:
             raise HardFailure(self._error("LOGIN_FAILED", "missing secrets: " + ", ".join(missing), None))
         self._secrets = secrets
+
+    def _preflight_commit(self) -> None:
+        if self.capability.side_effects != "irreversible":
+            raise self._reject("POLICY_VIOLATION", "commit mode is only for irreversible capabilities")
+        if not self.options.idempotency_key:
+            raise self._reject("IDEMPOTENCY_KEY_REQUIRED", "an irreversible commit needs an idempotency key")
+        if not self.options.commit_token:
+            raise self._reject("COMMIT_TOKEN_REQUIRED", "run a preview first and pass its commit token")
+        try:
+            self._claims = commit.verify(
+                self._signing_key, self.options.commit_token, capability=self.capability.id,
+                content_hash=self.result.content_hash, overlay_hash=self.overlay_hash, tenant=self.tenant.id,
+                inputs=self._inputs,
+            )
+        except commit.TokenError as exc:
+            raise self._reject("COMMIT_TOKEN_INVALID", str(exc)) from exc
+        key = self.options.idempotency_key
+        known = self._ledger.lookup(self.capability.id, self.tenant.id, key)
+        if known is not None:
+            state, recorded = known
+            if recorded is None:
+                raise self._reject("COMMIT_IN_PROGRESS", f"idempotency key {key!r} is held by a run in progress")
+            self._replayed = recorded.model_copy(update={"idempotent_replay": True})
+            self.log.event("note", idempotency_key=key, ledger_state=state, replayed_run=recorded.run_id)
+            return
+        if not self._ledger.claim(self.capability.id, self.tenant.id, key):
+            raise self._reject("COMMIT_IN_PROGRESS", f"idempotency key {key!r} was just claimed by another run")
+        self._claimed = key
 
     # ================================================================== session
 
@@ -244,9 +291,12 @@ class ReplayEngine:
         index = 0
         while index < len(steps):
             step = steps[index]
-            if step.effect == "irreversible" and self.options.mode == "preview":
-                self._build_preview()
-                raise PreviewReady
+            if step.effect == "irreversible" and not self.irreversible_done:
+                if self.options.mode == "preview":
+                    self._build_preview()
+                    raise PreviewReady
+                if self.options.mode == "commit":
+                    self._check_preview(step)
             try:
                 await self._run_step(step)
             except Restart as exc:
@@ -416,15 +466,16 @@ class ReplayEngine:
                 continue
             expected = describe(step.expect)
             self.log.event("checkpoint", step=step.id, condition=expected, held=False)
+            if step.effect == "irreversible":
+                # Loading or not, the commit may already have happened: never call it a load timeout.
+                raise NeedsHuman("INDETERMINATE_COMMIT", f"step {step.id} ran but its result was never confirmed",
+                                 step_id=step.id, expected=expected, observed=await self._observed())
             if loading:
                 raise HardFailure(self._error(
                     "LOAD_TIMEOUT", f"step {step.id}: still loading after {self.limits.slow_load_cap_ms} ms",
                     step.id, expected=expected, observed=await self._observed(),
                     evidence=await self._capture_failure(),
                 ))
-            if step.effect == "irreversible":
-                raise NeedsHuman("INDETERMINATE_COMMIT", f"step {step.id} ran but its result was never confirmed",
-                                 step_id=step.id, expected=expected, observed=await self._observed())
             raise NeedsHuman("UNEXPECTED_STATE", f"step {step.id}: expected {expected}", step_id=step.id,
                              expected=expected, observed=await self._observed())
 
@@ -466,7 +517,10 @@ class ReplayEngine:
                 continue
             if await self.cond.holds(outcome.when):
                 self.log.event("interrupt_detected", code=code, kind="business_outcome", step=step_id)
-                raise BusinessOutcome(OutcomeInfo(code=code, message=outcome.description, step_id=step_id))
+                observed = await self._observed()
+                shown = [m for f in observed["frames"] for m in f["messages"]]
+                raise BusinessOutcome(OutcomeInfo(code=code, message=outcome.description, step_id=step_id,
+                                                  messages=shown))
         return False
 
     async def _recover(self, spec: InterruptSpec, step: Step | None) -> None:
@@ -624,9 +678,30 @@ class ReplayEngine:
     async def _capture_failure(self) -> list[str]:
         return await self.rt.capture_failure()
 
+    def _preview_values(self) -> dict[str, Any]:
+        return {name: self.outputs.get(name) for name in self.capability.preview_outputs}
+
     def _build_preview(self) -> None:
-        values = {name: self.outputs.get(name) for name in self.capability.preview_outputs}
-        self.result.preview = PreviewInfo(values=values, commit_token="", expires_at=datetime.now(UTC))
+        values = self._preview_values()
+        token, expires = commit.issue(
+            self._signing_key, capability=self.capability.id, content_hash=self.result.content_hash,
+            overlay_hash=self.overlay_hash, tenant=self.tenant.id, inputs=self._inputs, preview=values,
+        )
+        self.result.preview = PreviewInfo(values=values, commit_token=token,
+                                          expires_at=datetime.fromtimestamp(expires, UTC))
+        self.log.event("checkpoint", step="preview", condition="stopped before the first irreversible step",
+                       held=True)
+
+    def _check_preview(self, step: Step) -> None:
+        """Commit only what the preview showed: the review screen must read the same as before."""
+        assert self._claims is not None
+        if commit.digest(self._signing_key, self._preview_values()) != self._claims.preview_digest:
+            raise HardFailure(self._error(
+                "PREVIEW_MISMATCH", f"the review screen before {step.id} no longer matches the preview; nothing "
+                "was committed. Run the preview again and confirm the new values.", step.id,
+            ))
+        self.log.event("policy_decision", step=step.id, rule="commit_token", allowed=True,
+                       reason="review values match the preview the token approved")
 
 
 async def replay(

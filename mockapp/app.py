@@ -421,8 +421,12 @@ def create_app(seed: int | None = None, faults_enabled: bool | None = None) -> F
             "funding": funding["suffix"],
             "funding_label": f'{funding["suffix"]} - {funding["description"]}',
         }
+        drift = state.faults_enabled and state.take_fault(tenant.config["id"], "review_drift", "subaccount_review")
+        shown = dict(session.reviews[token])
+        if drift:
+            shown["type"] = f'{shown["type"]} (2026 promotional rate)'  # what the member would see changed
         return await render(request, tenant, "subaccount_review", "subaccount_review.html",
-                            {"m": member, "r": session.reviews[token], "token": token}, session)
+                            {"m": member, "r": shown, "token": token}, session)
 
     @app.post("/subaccount/confirm")
     async def subaccount_confirm(request: Request) -> Response:

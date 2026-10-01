@@ -37,6 +37,7 @@ FAULT_NAMES = (
     "app_error",
     "app_unavailable",
     "confirm_timeout",
+    "review_drift",
 )
 
 

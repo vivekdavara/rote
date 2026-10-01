@@ -42,7 +42,7 @@ from rote.replay.engine import ReplayEngine, ReplayOptions
 from rote.replay.errors import HardFailure
 from rote.runtime import Runtime
 from rote.schema.capability import Capability, save_capability
-from rote.schema.condition import TextVisible
+from rote.schema.condition import AnyOf, TextVisible
 from rote.schema.result import InterventionRecord, RunResult
 from rote.schema.spec import GoalSpec
 from rote.schema.templating import render
@@ -204,7 +204,10 @@ class DiscoveryAgent:
             await self.rt.settle()
             observation = await observe(page)
             state = ScreenState.of(observation)
-            seen.append((state.fingerprint, tuple(sorted((k, str(v)) for k, v in state.values.items()))))
+            # Only actions that could change the screen count toward "no progress":
+            # reading three values in a row leaves the screen unchanged, as it should.
+            if not self.trace or self.trace[-1].tool != "extract":
+                seen.append((state.fingerprint, tuple(sorted((k, str(v)) for k, v in state.values.items()))))
             if self._stuck(seen):
                 await self._escalate("no progress: the last actions left the screen unchanged or oscillating",
                                      "stuck")
@@ -527,9 +530,6 @@ class DiscoveryAgent:
         happy = [s for s in [self.start, *(t.before for t in self.trace), *(t.after for t in self.trace)] if s]
         step_ids = [s.id for s in capability.steps]
         for index, negative in enumerate(self.spec.negative_examples, 1):
-            if negative.code in capability.outcomes:
-                result.outcomes.append(OutcomeLearning(negative.code, "already_declared", "declared already"))
-                continue
             run = await self._replay(capability, negative.inputs, f"negative-{index}")
             if run.status == "business_outcome" and run.outcome is not None:
                 result.outcomes.append(OutcomeLearning(negative.code, "already_declared",
@@ -554,7 +554,15 @@ class DiscoveryAgent:
             after_step = error.step_id if error.code == "UNEXPECTED_STATE" else step_ids[max(failed_at - 1, 0)]
             detector = TextVisible(text_visible=template_text(message, negative.inputs), frame=None if frame == "top"
                                    else frame)
-            candidate = with_outcome(capability, negative.code, negative.description, after_step, detector)
+            existing = capability.outcomes.get(negative.code)
+            when: Any = detector
+            if existing is not None:
+                # Same outcome, another way the app says it: widen the detector, keep the scope.
+                parts = existing.when.any if isinstance(existing.when, AnyOf) else [existing.when]
+                when = AnyOf(any=[*parts, detector])
+                after_step = existing.after_step or after_step
+            candidate = with_outcome(capability, negative.code, negative.description or
+                                     (existing.description if existing else None), after_step, when)
             confirm = await self._replay(candidate, negative.inputs, f"negative-{index}-confirm")
             if confirm.status == "business_outcome" and confirm.outcome and confirm.outcome.code == negative.code:
                 capability = candidate

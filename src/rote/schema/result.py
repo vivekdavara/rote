@@ -43,6 +43,7 @@ class OutcomeInfo(_Model):
     code: str
     message: str | None = None
     step_id: str | None = None
+    messages: list[str] = Field(default_factory=list, description="What the application itself said.")
 
 
 class RecoveryRecord(_Model):

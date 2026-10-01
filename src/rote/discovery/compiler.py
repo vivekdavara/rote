@@ -40,6 +40,7 @@ from rote.schema.capability import (
 from rote.schema.condition import AllOf, OutputPresent, TextVisible, ValueEquals
 from rote.schema.spec import GoalSpec
 from rote.schema.target import Target
+from rote.schema.templating import render
 
 ACTION_TOOLS = frozenset({"click", "type_text", "select_option", "set_checkbox", "press_key", "extract"})
 _DATA = re.compile(r"\d|\$")
@@ -113,15 +114,23 @@ def _postcondition(step: TraceStep, inputs: dict[str, str], notes: list[str]) ->
 
 
 def _without_detours(steps: list[TraceStep], notes: list[str]) -> list[TraceStep]:
+    """Drop navigation that came back to where it started (opened the wrong menu, went back).
+
+    Only clicks and key presses close a detour; reads never move the screen. A segment that
+    extracted an output or did anything irreversible is never dropped.
+    """
     kept: list[TraceStep] = []
     for step in steps:
         assert step.before is not None and step.after is not None
-        loop_start = next((i for i, k in enumerate(kept) if k.before is not None and k.before.same_as(step.after)), None)
-        if loop_start is not None and step.effect == "read_only":
-            dropped = [k.index for k in kept[loop_start:]] + [step.index]
-            notes.append(f"dropped detour steps {dropped}: they ended where they started")
-            del kept[loop_start:]
-            continue
+        if step.tool in ("click", "press_key") and step.effect == "read_only":
+            loop_start = next((i for i, k in enumerate(kept) if k.before is not None
+                               and k.before.same_as(step.after)), None)
+            segment = kept[loop_start:] if loop_start is not None else []
+            if loop_start is not None and not any(k.tool == "extract" or k.effect != "read_only" for k in segment):
+                dropped = [k.index for k in segment] + [step.index]
+                notes.append(f"dropped detour steps {dropped}: they ended where they started")
+                del kept[loop_start:]
+                continue
         kept.append(step)
     return kept
 
@@ -137,12 +146,30 @@ def _step_from_trace(step: TraceStep, step_id: str, inputs: dict[str, str], note
     if step.tool == "type_text":
         return FillStep(target=target, value=template_text(str(args["text"]), inputs), **common)
     if step.tool == "select_option":
-        return SelectStep(target=target, option=template_text(str(args["option"]), inputs), **common)
+        return SelectStep(target=target, option=_option(step, inputs), **common)
     if step.tool == "set_checkbox":
         return CheckStep(target=target, checked=bool(args["checked"]), **common)
     if step.tool == "press_key":
         return PressStep(key=str(args["key"]), target=target if step.candidates else None, **common)
     raise CompileError(f"cannot compile tool {step.tool!r}")
+
+
+def _option(step: TraceStep, inputs: dict[str, str]) -> str:
+    """The option to select at replay: an input placeholder when the chosen option's value or label is an input.
+
+    Templating inside a label ("S00 - Primary Savings" -> "{{inputs.funding_suffix}} - Primary Savings") would
+    break as soon as the input picks a different account, so the whole option is bound or none of it is.
+    """
+    chosen = render(str(step.args["option"]), {"inputs": inputs})
+    options = (step.facts or {}).get("options") or []
+    option = next((o for o in options if chosen in (o["label"], o["value"]) or o["label"].startswith(chosen + " ")),
+                  None)
+    for name, value in inputs.items():
+        if value and option is not None and value in (option["value"], option["label"]):
+            return f"{{{{inputs.{name}}}}}"
+        if value and value == chosen:
+            return f"{{{{inputs.{name}}}}}"
+    return option["label"] if option is not None else chosen
 
 
 def _describe(step: TraceStep) -> str | None:
@@ -235,7 +262,7 @@ def compile_trace(
         side_effects=side_effects,  # type: ignore[arg-type]
         inputs={name: s.contract() for name, s in spec.inputs.items()},
         outputs=dict(spec.outputs),
-        preview_outputs=[],
+        preview_outputs=_preview_outputs(steps),
         outcomes={},
         requires=[f"session:{spec.product}"],
         steps=steps,
@@ -248,8 +275,15 @@ def compile_trace(
     return Compiled(capability, notes)
 
 
+def _preview_outputs(steps: list[Step]) -> list[str]:
+    first = next((i for i, step in enumerate(steps) if step.effect == "irreversible"), None)
+    if first is None:
+        return []
+    return [step.output for step in steps[:first] if isinstance(step, ExtractStep)]
+
+
 def with_outcome(capability: Capability, code: str, description: str | None, after_step: str,
-                 detector: TextVisible) -> Capability:
+                 detector: Any) -> Capability:
     """Add a business outcome and revalidate the whole artifact."""
     data = capability.model_dump(mode="json", by_alias=True, exclude_none=True)
     outcome = OutcomeSpec(description=description, after_step=after_step, when=detector)

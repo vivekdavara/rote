@@ -1,0 +1,115 @@
+# Hand-written reference artifact for an irreversible capability (test fixture).
+schema_version: 1
+id: coreone.member.open_sub_account
+version: 1.0.0
+summary: Open a new share sub-account for a member, funded from one of their accounts.
+product: {name: coreone, versions: ">=4.2,<5"}
+surface: web
+side_effects: irreversible
+inputs:
+  member_id: {type: string, pattern: "^[0-9]{6}$", sensitive: member_id, description: Six-digit member number.}
+  share_type: {type: string, enum: [Regular Savings, Holiday Club, Money Market]}
+  nickname: {type: string, pattern: "^[A-Za-z0-9 ]{1,20}$"}
+  deposit: {type: decimal, description: Initial deposit in dollars.}
+  funding_suffix: {type: string, pattern: "^S[0-9]{2}$", description: Suffix of the account that funds the deposit.}
+outputs:
+  review_share_type: {type: string, description: Share type as shown on the review screen.}
+  review_deposit: {type: money, description: Initial deposit as shown on the review screen.}
+  review_funding_account: {type: string, description: Funding account as shown on the review screen.}
+  confirmation_number: {type: string, description: CoreOne's confirmation number for the new sub-account.}
+preview_outputs: [review_share_type, review_deposit, review_funding_account]
+outcomes:
+  MEMBER_NOT_FOUND:
+    after_step: submit_search
+    when: {text_visible: No members found matching, frame: main}
+  VALIDATION_REJECTED:
+    description: CoreOne rejected the request; the app's message says why.
+    after_step: continue_to_review
+    when:
+      any:
+        - {text_visible: Initial deposit must be at least, frame: main}
+        - {text_visible: exceeds the available balance, frame: main}
+        - {text_visible: disclosure must be provided, frame: main}
+steps:
+  - id: open_search
+    action: click
+    target: {frame: nav, locators: [{by: role, role: link, name: Member Search}]}
+    expect: {text_visible: Last Name, frame: main}
+  - id: enter_member_id
+    action: fill
+    value: "{{inputs.member_id}}"
+    target: {frame: main, locators: [{by: label, text: Member Number, role: textbox}]}
+    expect: {value_equals: "{{inputs.member_id}}"}
+  - id: submit_search
+    action: click
+    target: {frame: main, locators: [{by: role, role: button, name: Search}]}
+    expect: {text_visible: Search Results, frame: main}
+  - id: open_member
+    action: click
+    target:
+      frame: main
+      locators:
+        - {by: table_cell, headers: ["Member #"], row: {"Member #": "{{inputs.member_id}}"}, then: {role: link, name: View}}
+    expect: {all: [{text_visible: Member Detail, frame: main}, {text_visible: "{{inputs.member_id}}", frame: main}]}
+  - id: open_form
+    action: click
+    target: {frame: main, locators: [{by: role, role: link, name: Open Sub-Account}]}
+    expect: {text_visible: Initial Deposit, frame: main}
+  - id: choose_share_type
+    action: select
+    option: "{{inputs.share_type}}"
+    target: {frame: main, locators: [{by: label, text: Share Type, role: combobox}]}
+  - id: enter_nickname
+    action: fill
+    value: "{{inputs.nickname}}"
+    target: {frame: main, locators: [{by: label, text: Nickname, role: textbox}]}
+    expect: {value_equals: "{{inputs.nickname}}"}
+  - id: enter_deposit
+    action: fill
+    value: "{{inputs.deposit}}"
+    target: {frame: main, locators: [{by: label, text: Initial Deposit, role: textbox}]}
+    expect: {value_equals: "{{inputs.deposit}}"}
+  - id: choose_funding
+    action: select
+    option: "{{inputs.funding_suffix}}"
+    target: {frame: main, locators: [{by: label, text: Funding Account, role: combobox}]}
+  - id: confirm_disclosure
+    action: check
+    target: {frame: main, locators: [{by: label, text: Truth-in-Savings disclosure provided to member, role: checkbox}]}
+  - id: continue_to_review
+    action: click
+    target: {frame: main, locators: [{by: role, role: button, name: Continue}]}
+    expect: {text_visible: Please review and confirm, frame: main}
+  - id: read_review_share_type
+    action: extract
+    output: review_share_type
+    target: {frame: main, locators: [{by: label, text: Share Type}]}
+  - id: read_review_deposit
+    action: extract
+    output: review_deposit
+    parse: money
+    target: {frame: main, locators: [{by: label, text: Initial Deposit}]}
+  - id: read_review_funding
+    action: extract
+    output: review_funding_account
+    target: {frame: main, locators: [{by: label, text: Funding Account}]}
+  - id: confirm
+    intent: Commit the new sub-account
+    action: click
+    effect: irreversible
+    target: {frame: main, locators: [{by: role, role: button, name: Confirm}]}
+    expect: {all: [{text_visible: Sub-Account Opened, frame: main}, {text_visible: "{{inputs.member_id}}", frame: main}]}
+  - id: read_confirmation
+    action: extract
+    output: confirmation_number
+    target: {frame: main, locators: [{by: label, text: "Confirmation #"}]}
+success:
+  all:
+    - {text_visible: Sub-Account Opened, frame: main}
+    - {text_visible: "{{inputs.member_id}}", frame: main}
+    - {text_visible: "{{inputs.share_type}}", frame: main}
+    - {text_visible: "{{inputs.deposit}}", frame: main}
+    - {output_present: confirmation_number}
+provenance:
+  source: authored
+  note: Hand-written reference for the commit protocol tests.
