@@ -69,7 +69,7 @@ async def attended_run(workspace: Workspace, browser: Browser, operator: Operato
 
 
 async def wait_for_intervention(client: httpx.AsyncClient) -> dict[str, Any]:
-    for _ in range(300):
+    for _ in range(900):  # up to ~90 s: CI runners are much slower than a laptop
         state = (await client.get("/api/state")).json()
         if state["intervention"]:
             return state

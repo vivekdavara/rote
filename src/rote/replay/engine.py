@@ -450,6 +450,10 @@ class ReplayEngine:
         extended = False
         target = getattr(step, "target", None)
         while True:
+            if self.rt.pending_dialog is not None:
+                # Escalate on sight: any page read now would only wait out its timeout.
+                raise NeedsHuman("UNKNOWN_DIALOG", f"unrecognized dialog after {step.id}: {self.rt.dialog_message!r}",
+                                 step_id=step.id)
             if await self.cond.holds(step.expect, target):
                 self.log.event("checkpoint", step=step.id, condition=describe(step.expect), held=True)
                 return
