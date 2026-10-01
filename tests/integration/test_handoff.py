@@ -158,11 +158,14 @@ async def answer_dialog(client: httpx.AsyncClient, engine: ReplayEngine) -> None
         events = [json.loads(line)["type"] for line in (engine.log.dir / "events.jsonl").read_text().splitlines()[-4:]]
         stacks = []
         for task in asyncio.all_tasks():
-            frames = task.get_stack(limit=40)
-            if any("rote" in f.f_code.co_filename for f in frames):
-                stacks.append(f"--- {task.get_name()}\n" + "".join(
-                    f"  {f.f_code.co_filename.split('site-packages/')[-1]}:{f.f_lineno} {f.f_code.co_name}\n"
-                    for f in frames))
+            lines, coro = [], task.get_coro()
+            while coro is not None and hasattr(coro, "cr_frame") and coro.cr_frame is not None:
+                frame = coro.cr_frame
+                lines.append(f"  {frame.f_code.co_filename.split('/rote/')[-1].split('site-packages/')[-1]}:"
+                             f"{frame.f_lineno} {frame.f_code.co_name}")
+                coro = coro.cr_await
+            if lines:
+                stacks.append(f"--- {task.get_name()} awaiting {coro!r}\n" + "\n".join(lines))
         raise AssertionError(f"no intervention; dialog pending={engine.rt.pending_dialog is not None}; "
                              f"last events: {events}\nsuspended tasks:\n" + "\n".join(stacks)) from exc
     say(f"intervention {state['intervention']['reason_code']}: {state['intervention']['reason']}; dialog={state['dialog']!r}")
