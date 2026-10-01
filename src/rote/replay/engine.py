@@ -409,6 +409,10 @@ class ReplayEngine:
         try:
             await self.rt.perform(step, resolved, resolver)
         except (PlaywrightError, actions.OptionNotFound) as exc:
+            if self.rt.pending_dialog is not None:
+                # The action stalled behind a native dialog (a click waits for the navigation it started).
+                raise NeedsHuman("UNKNOWN_DIALOG", f"unrecognized dialog during {step.id}: "
+                                 f"{self.rt.dialog_message!r}", step_id=step.id) from exc
             raise NeedsHuman("UNEXPECTED_STATE", f"step {step.id}: {step.action} failed: {str(exc).splitlines()[0]}",
                              step_id=step.id, observed=await self._observed()) from exc
 

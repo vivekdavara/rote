@@ -152,7 +152,12 @@ async def test_operator_can_abort(workspace: Workspace, browser: Browser, mock: 
 
 
 async def answer_dialog(client: httpx.AsyncClient, engine: ReplayEngine) -> None:
-    state = await wait_for_intervention(client)
+    try:
+        state = await wait_for_intervention(client)
+    except AssertionError as exc:
+        events = (engine.log.dir / "events.jsonl").read_text().splitlines()[-12:]
+        raise AssertionError(f"no intervention; engine saw dialog={engine.rt.dialog_message!r}, "
+                             f"pending={engine.rt.pending_dialog is not None}; last events: {events}") from exc
     say(f"intervention {state['intervention']['reason_code']}: {state['intervention']['reason']}; dialog={state['dialog']!r}")
     assert state["intervention"]["reason_code"] == "UNKNOWN_DIALOG"
     assert "wire transfer" in (state["dialog"] or "")

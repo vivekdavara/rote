@@ -89,7 +89,7 @@ class EvaluateTimeout(Error):
     """An in-page call did not return: typically a native dialog is blocking the page."""
 
 
-CALL_TIMEOUT_S = 5.0
+CALL_TIMEOUT_S = 2.5
 
 
 async def bounded(awaitable: Any) -> Any:

@@ -226,6 +226,8 @@ class Runtime:
     # ---------------------------------------------------------------- evidence
 
     async def observed(self) -> dict[str, Any]:
+        if self.pending_dialog is not None:
+            return {"frames": [], "dialog": self.dialog_message}  # the page can't be read behind a native dialog
         frames = []
         for frame in self.web.page.frames:
             try:
@@ -244,7 +246,7 @@ class Runtime:
 
     async def collect_screen_pii(self) -> None:
         labels = self.profile.redaction.mask_labels
-        if not labels:
+        if not labels or self.pending_dialog is not None:
             return
         for frame in self.web.page.frames:
             try:
