@@ -23,13 +23,14 @@ from rote.schema.condition import (
 )
 from rote.schema.target import Target
 from rote.surface.web.resolver import Resolver, describe_target
-from rote.surface.web.session import call
+from rote.surface.web.session import EvaluateTimeout, call
 
 
 class ConditionEvaluator:
     def __init__(self, resolver: Resolver, outputs: Mapping[str, Any]) -> None:
         self.resolver = resolver
         self.outputs = outputs
+        self.timeouts = 0  # page reads that timed out: a strong sign something (a native dialog) blocks the page
 
     def _frames(self, name: str | None) -> list[Frame]:
         session = self.resolver.session
@@ -45,6 +46,8 @@ class ConditionEvaluator:
                 try:
                     if await call(frame, "textVisible", text):
                         return True
+                except EvaluateTimeout:
+                    self.timeouts += 1
                 except Error:
                     continue
             return False

@@ -449,6 +449,7 @@ class ReplayEngine:
         deadline = start + timeout
         extended = False
         target = getattr(step, "target", None)
+        self.cond.timeouts = 0
         while True:
             if self.rt.pending_dialog is not None:
                 # Escalate on sight: any page read now would only wait out its timeout.
@@ -474,6 +475,16 @@ class ReplayEngine:
                 continue
             expected = describe(step.expect)
             self.log.event("checkpoint", step=step.id, condition=expected, held=False)
+            if self.cond.timeouts and self.rt.pending_dialog is None:
+                # Reads timed out: the page is probably blocked by a dialog whose event is still
+                # in flight (it can land seconds late on slower machines). Give it a moment.
+                for _ in range(50):
+                    if self.rt.pending_dialog is not None:
+                        break
+                    await asyncio.sleep(0.1)
+            if self.rt.pending_dialog is not None:
+                raise NeedsHuman("UNKNOWN_DIALOG", f"unrecognized dialog after {step.id}: {self.rt.dialog_message!r}",
+                                 step_id=step.id, expected=expected)
             if step.effect == "irreversible":
                 # Loading or not, the commit may already have happened: never call it a load timeout.
                 raise NeedsHuman("INDETERMINATE_COMMIT", f"step {step.id} ran but its result was never confirmed",
@@ -564,6 +575,10 @@ class ReplayEngine:
 
     async def _needs_human(self, exc: NeedsHuman, index: int) -> int:
         """Escalate when attended; otherwise fail with the same code and full evidence."""
+        if self.rt.pending_dialog is not None and exc.code != "UNKNOWN_DIALOG":
+            # Whatever went wrong, a held native dialog is what blocks the page: name it.
+            exc = NeedsHuman("UNKNOWN_DIALOG", f"unrecognized dialog: {self.rt.dialog_message!r} ({exc.message})",
+                             step_id=exc.step_id, expected=exc.expected)
         if self.options.attended and self.escalator is not None and exc.code in ESCALATABLE:
             return await self._escalate(exc, index)
         raise HardFailure(self._error(
