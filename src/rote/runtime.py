@@ -253,7 +253,10 @@ class Runtime:
             except PlaywrightError:
                 continue
 
-    async def screenshot(self) -> bytes:
+    async def screenshot(self) -> bytes | None:
+        """Masked screenshot, or None while a native dialog blocks the page (Chromium cannot capture then)."""
+        if self.pending_dialog is not None:
+            return None
         await self.collect_screen_pii()
         return await masked_screenshot(
             self.web.page,
@@ -264,14 +267,19 @@ class Runtime:
 
     async def save_screenshot(self, name: str) -> str | None:
         try:
-            return self.log.save_bytes(name, await self.screenshot())
+            image = await self.screenshot()
         except PlaywrightError:
             return None
+        return self.log.save_bytes(name, image) if image is not None else None
 
     async def capture_failure(self) -> list[str]:
         paths: list[str] = []
         try:
-            paths.append(self.log.save_bytes("failure/screenshot.png", await self.screenshot()))
+            image = await self.screenshot()
+            if image is not None:
+                paths.append(self.log.save_bytes("failure/screenshot.png", image))
+            if self.pending_dialog is not None:
+                return paths  # the page cannot be read while a native dialog blocks it
             observation = await observe(self.web.page, tag=False, screenshot=False, max_text=1500)
             snapshot = self.log.write_text("failure/snapshot.txt", render_observation(observation))
             paths.append(str(snapshot.relative_to(self.log.dir)))

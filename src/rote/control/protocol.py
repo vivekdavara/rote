@@ -36,3 +36,7 @@ class Escalator(Protocol):
     ) -> OperatorResolution:
         """Open an intervention and wait until the operator resolves it or it times out."""
         ...
+
+    def resume(self, reason: str) -> None:
+        """Resync finished: the automation takes the lease back."""
+        ...

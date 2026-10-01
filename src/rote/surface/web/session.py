@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -84,16 +85,36 @@ class WebSession:
         return self.page.frame(name=name)
 
 
+class EvaluateTimeout(Error):
+    """An in-page call did not return: typically a native dialog is blocking the page."""
+
+
+CALL_TIMEOUT_S = 5.0
+
+
+async def _bounded(awaitable: Any) -> Any:
+    try:
+        return await asyncio.wait_for(awaitable, timeout=CALL_TIMEOUT_S)
+    except TimeoutError as exc:
+        raise EvaluateTimeout("in-page call timed out (is a native dialog open?)") from exc
+
+
 async def call(frame: Frame, function: str, *args: Any) -> Any:
-    """Call ``window.__rote.<function>(*args)`` in a frame, installing the library if needed."""
+    """Call ``window.__rote.<function>(*args)`` in a frame, installing the library if needed.
+
+    Bounded by a timeout, because a native alert blocks the page's JavaScript and an
+    unbounded evaluate would stop the engine from ever noticing the dialog.
+    """
     script = f"(args) => window.__rote.{function}(...args)"
     try:
-        return await frame.evaluate(script, list(args))
+        return await _bounded(frame.evaluate(script, list(args)))
+    except EvaluateTimeout:
+        raise
     except Error as exc:
         if "__rote" not in str(exc):
             raise
-        await frame.evaluate(_LIB_EXPRESSION)
-        return await frame.evaluate(script, list(args))
+        await _bounded(frame.evaluate(_LIB_EXPRESSION))
+        return await _bounded(frame.evaluate(script, list(args)))
 
 
 async def call_handle(frame: Frame, function: str, *args: Any) -> JSHandle:

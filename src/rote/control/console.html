@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rote operator console</title>
+<style>
+  :root {
+    --bg: #f6f6f3; --panel: #ffffff; --ink: #1c1f24; --muted: #5d6470; --line: #d9dbd6;
+    --agent: #2f6f4f; --human: #a2501d; --wait: #8a6d00; --bad: #a52a2a; --accent: #1f3a5f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 -apple-system, "Segoe UI", system-ui, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  .badge { padding: 2px 10px; border-radius: 999px; font-weight: 600; font-size: 12px; color: #fff; background: var(--muted); }
+  .badge.AGENT_ACTIVE { background: var(--agent); } .badge.HUMAN_ACTIVE { background: var(--human); }
+  .badge.AWAITING_OPERATOR, .badge.RESYNCING { background: var(--wait); } .badge.ABORTED, .badge.TIMED_OUT { background: var(--bad); }
+  .muted { color: var(--muted); }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; padding: 16px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .live { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+  .live img { width: 100%; display: block; border: 1px solid var(--line); cursor: crosshair; background: #eee; }
+  .live.locked img { cursor: not-allowed; opacity: 0.85; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
+  .code { font-family: ui-monospace, Menlo, monospace; font-weight: 600; }
+  button { font: inherit; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.danger { color: var(--bad); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+  input[type=text], textarea, select { font: inherit; width: 100%; padding: 6px; border: 1px solid var(--line); border-radius: 4px; }
+  textarea { min-height: 54px; resize: vertical; }
+  .dialog { border-left: 4px solid var(--wait); padding-left: 8px; }
+  ol.log { padding-left: 18px; margin: 0; max-height: 160px; overflow: auto; font-size: 12px; }
+  label.check { display: flex; gap: 6px; align-items: center; font-size: 13px; margin: 2px 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>rote operator console</h1>
+  <span id="lease" class="badge">…</span>
+  <span id="holder" class="muted"></span>
+  <span class="muted" style="margin-left:auto" id="run"></span>
+</header>
+<main>
+  <section id="livebox" class="live locked">
+    <img id="live" alt="Live view of the session the automation is driving">
+    <div class="muted" style="margin-top:6px">Live view of the same browser session. Clicks here are relayed only while you hold control.</div>
+  </section>
+  <aside>
+    <div class="panel" id="intervention">
+      <h2>Intervention</h2>
+      <div id="noint" class="muted">Nothing needs you right now.</div>
+      <div id="int" hidden>
+        <div><span class="code" id="code"></span> <span class="muted">at step</span> <span class="code" id="step"></span></div>
+        <div id="reason" style="margin-top:4px"></div>
+        <div id="dialogbox" class="dialog" hidden style="margin-top:8px">
+          <div><strong>Native dialog:</strong> <span id="dialogmsg"></span></div>
+          <div class="row"><button id="accept">Accept</button><button id="dismiss">Dismiss</button></div>
+        </div>
+      </div>
+      <div class="row">
+        <input type="text" id="operator" placeholder="Your name" style="flex:1">
+      </div>
+      <div class="row">
+        <button class="primary" id="take">Take control</button>
+        <button id="approve">Approve</button>
+        <button class="danger" id="reject">Reject</button>
+        <button class="danger" id="abort">Abort run</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Act on the live session</h2>
+      <div class="row"><input type="text" id="text" placeholder="Text to type into the focused field"><button id="type">Type</button></div>
+      <div class="row">
+        <button data-key="Enter">Enter</button><button data-key="Tab">Tab</button><button data-key="Escape">Esc</button>
+        <button data-key="Backspace">⌫</button><button id="up">Scroll ↑</button><button id="down">Scroll ↓</button>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Hand back</h2>
+      <textarea id="note" placeholder="What you did, for the record"></textarea>
+      <div class="muted" style="margin:6px 0 2px">Steps you completed yourself (attest only what you actually did):</div>
+      <div id="attest"></div>
+      <div class="muted" style="margin:6px 0 2px">Resume at (optional):</div>
+      <select id="resume"><option value="">Let rote work it out</option></select>
+      <div class="row"><button class="primary" id="handback">Hand back to automation</button></div>
+    </div>
+    <div class="panel"><h2>Your actions</h2><ol class="log" id="log"></ol></div>
+  </aside>
+</main>
+<script>
+const TOKEN = "__TOKEN__";
+const $ = (id) => document.getElementById(id);
+const api = (path, body) => fetch(path + (path.includes("?") ? "&" : "?") + "t=" + TOKEN, body === undefined ? {} : {
+  method: "POST", headers: {"content-type": "application/json"}, body: JSON.stringify(body)
+}).then(async (r) => { if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.detail || r.statusText); } return r.json(); });
+let state = null, stepsRendered = false;
+const operator = () => $("operator").value.trim() || "operator";
+const log = (text) => { const li = document.createElement("li"); li.textContent = text; $("log").prepend(li); };
+const act = (body, text) => api("/api/input", body).then(() => log(text)).catch((e) => alert(e.message));
+
+async function refresh() {
+  try { state = await api("/api/state"); } catch (e) { $("lease").textContent = "console offline"; return; }
+  $("lease").textContent = state.lease; $("lease").className = "badge " + state.lease;
+  $("holder").textContent = state.lease === "HUMAN_ACTIVE" ? "held by " + state.holder : "";
+  $("run").textContent = state.run_id;
+  const i = state.intervention;
+  $("noint").hidden = !!i; $("int").hidden = !i;
+  if (i) { $("code").textContent = i.reason_code; $("step").textContent = i.step_id || "-"; $("reason").textContent = i.reason; }
+  $("dialogbox").hidden = !state.dialog; $("dialogmsg").textContent = state.dialog || "";
+  const human = state.lease === "HUMAN_ACTIVE", waiting = state.lease === "AWAITING_OPERATOR";
+  $("livebox").className = "live" + (human ? "" : " locked");
+  $("take").disabled = !waiting; $("approve").disabled = !(waiting && i && i.reason_code === "APPROVAL_REQUIRED");
+  $("reject").disabled = !waiting; $("abort").disabled = !(waiting || human); $("handback").disabled = !human;
+  document.querySelectorAll("[data-key], #type, #up, #down, #accept, #dismiss").forEach((b) => b.disabled = !human);
+  if (!stepsRendered && state.steps.length) {
+    stepsRendered = true;
+    for (const s of state.steps) {
+      const l = document.createElement("label"); l.className = "check";
+      l.innerHTML = `<input type="checkbox" value="${s.id}"> <span class="code">${s.id}</span>`; $("attest").append(l);
+      const o = document.createElement("option"); o.value = s.id; o.textContent = s.id; $("resume").append(o);
+    }
+  }
+  if (waiting || human) $("live").src = "/api/live.png?t=" + TOKEN + "&ts=" + Date.now();
+}
+$("live").addEventListener("click", (ev) => {
+  if (!state || state.lease !== "HUMAN_ACTIVE") return;
+  const img = ev.target, x = ev.offsetX * img.naturalWidth / img.clientWidth, y = ev.offsetY * img.naturalHeight / img.clientHeight;
+  act({kind: "click", x, y}, `click at ${Math.round(x)}, ${Math.round(y)}`);
+});
+$("take").onclick = () => api("/api/take", {operator: operator()}).then(refresh).catch((e) => alert(e.message));
+$("approve").onclick = () => api("/api/approve", {operator: operator()}).then(refresh);
+$("reject").onclick = () => api("/api/reject", {operator: operator()}).then(refresh);
+$("abort").onclick = () => confirm("Abort this run?") && api("/api/abort", {operator: operator()}).then(refresh);
+$("type").onclick = () => act({kind: "type", text: $("text").value}, `typed ${$("text").value.length} characters`);
+$("up").onclick = () => act({kind: "scroll", dy: -300}, "scroll up");
+$("down").onclick = () => act({kind: "scroll", dy: 300}, "scroll down");
+document.querySelectorAll("[data-key]").forEach((b) => b.onclick = () => act({kind: "key", key: b.dataset.key}, "key " + b.dataset.key));
+$("accept").onclick = () => api("/api/dialog", {accept: true}).then(() => log("accepted dialog"));
+$("dismiss").onclick = () => api("/api/dialog", {accept: false}).then(() => log("dismissed dialog"));
+$("handback").onclick = () => api("/api/handback", {
+  note: $("note").value, resume_step: $("resume").value,
+  attested_steps: [...document.querySelectorAll("#attest input:checked")].map((c) => c.value),
+}).then(refresh).catch((e) => alert(e.message));
+refresh(); setInterval(refresh, 1000);
+</script>
+</body>
+</html>

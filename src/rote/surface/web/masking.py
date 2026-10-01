@@ -30,7 +30,7 @@ async def masked_screenshot(
         elif frame.name:
             masks.append(page.frame_locator(f'frame[name="{frame.name}"], iframe[name="{frame.name}"]').locator("[data-rote-mask]"))
     try:
-        return await page.screenshot(type="png", mask=masks, mask_color="#20242a")
+        return await page.screenshot(type="png", mask=masks, mask_color="#20242a", timeout=8000)
     finally:
         for frame in page.frames:
             try:

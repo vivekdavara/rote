@@ -373,6 +373,13 @@
 
   const summary = () => ({ url: location.href, headings: headings(), messages: messages() });
 
+  // The control that has keyboard focus in this frame, if any (the operator relay types into it).
+  const focused = () => {
+    const el = document.activeElement;
+    if (!el || el === document.body || el.tagName === "FRAMESET" || el.tagName === "FRAME") return null;
+    return facts(el);
+  };
+
   window.__rote = {
     version: 1,
     norm,
@@ -395,5 +402,6 @@
     markForMasking,
     clearMasks,
     summary,
+    focused,
   };
 })();

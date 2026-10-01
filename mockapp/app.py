@@ -118,8 +118,9 @@ def create_app(seed: int | None = None, faults_enabled: bool | None = None) -> F
                 ctx["overlay"] = "security"
             elif state.take_fault(tid, "unknown_modal", page):
                 ctx["overlay"] = "fraud"
-            if state.take_fault(tid, "js_dialog", page):
-                ctx["alert"] = "This member has pending mail items."
+            dialog = state.take_fault(tid, "js_dialog", page)
+            if dialog:
+                ctx["alert"] = dialog.message or "This member has pending mail items."
         return templates.TemplateResponse(request, template, ctx, status_code=status)
 
     def member_or_none(tenant: TenantState, mid: str | None) -> dict[str, Any] | None:
@@ -483,7 +484,7 @@ def create_app(seed: int | None = None, faults_enabled: bool | None = None) -> F
         body = await request.json()
         try:
             state.add_fault(tenant.config["id"], body["fault"], body.get("page"), int(body.get("times", 1)),
-                            int(body.get("ms", 0)))
+                            int(body.get("ms", 0)), body.get("message"))
         except (KeyError, ValueError) as exc:
             return JSONResponse({"error": str(exc)}, status_code=400)
         return JSONResponse({"ok": True})

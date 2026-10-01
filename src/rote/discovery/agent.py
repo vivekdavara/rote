@@ -124,6 +124,9 @@ class DiscoveryAgent:
         self.rt = Runtime(workspace, self.tenant, self.profile, self.policy, run_id=self.run_id,
                           hold_unknown_dialogs=self.options.attended and escalator is not None)
         self.log = self.rt.log
+        bind = getattr(escalator, "bind", None)
+        if bind is not None:
+            bind(self.rt, [])
         self.inputs = spec.example(0)
         for spec_input in spec.inputs.values():
             if spec_input.sensitive:
@@ -142,6 +145,7 @@ class DiscoveryAgent:
         self.usage: dict[str, Any] = {"input": 0, "cache_read": 0, "cache_write": 0, "output": 0, "calls": 0}
         self.served_by: list[str] = []
         self.start: ScreenState | None = None
+        self._human_steps = 0
         self.resolver: Resolver
 
     # ============================================================== entry point
@@ -409,7 +413,67 @@ class DiscoveryAgent:
         await self._hand_to_operator(reason, category)
 
     async def _hand_to_operator(self, reason: str, category: str) -> None:
-        raise DiscoveryStop("NEEDS_HUMAN", f"{category}: {reason} (operator handoff lands in the next milestone)")
+        """Give the live session to an operator. What they do through the relay becomes human steps."""
+        assert self.escalator is not None
+        page = self.rt.web.page
+        pending: list[TraceStep] = []
+
+        async def before_human(kind: str, detail: dict[str, Any]) -> None:
+            # Runs before the relay dispatches the input, so locators are validated on the
+            # same screen the operator sees, as with the model's actions.
+            observation = await observe(page, tag=True, screenshot=False)
+            facts = detail.get("facts") or {}
+            frame = self.rt.web.frame(None if facts.get("frame") in (None, "top") else facts["frame"])
+            if frame is None or not facts.get("role"):
+                return
+            script = ("([x, y]) => { const e = document.elementFromPoint(x, y); return e && "
+                      "(e.closest('a[href],button,input,select,textarea,[onclick]') || e); }") if kind == "click" \
+                else "() => document.activeElement"
+            local = await self._local_point(frame, detail) if kind == "click" else None
+            handle = await frame.evaluate_handle(script, local) if kind == "click" else \
+                await frame.evaluate_handle(script)
+            element = handle.as_element()
+            if element is None:
+                return
+            ref = await element.get_attribute("data-rote-ref") or ""
+            self._human_steps += 1
+            step = TraceStep(index=1000 + self._human_steps, tool="click" if kind == "click" else "type_text",
+                             args={"text": detail.get("text", "")} if kind == "type" else {},
+                             rationale="Performed by the operator.", provenance="human",
+                             frame=facts.get("frame") if facts.get("frame") != "top" else None, facts=facts,
+                             before=ScreenState.of(observation))
+            step.effect = self.rt.gate.classify(facts, frame.url) if kind == "click" else "read_only"
+            step.candidates = await build_candidates(self.resolver, frame, element, ref, facts, self.inputs) if ref \
+                else []
+            pending.append(step)
+
+        setattr(self.escalator, "before_human_action", before_human)  # noqa: B010 - optional ControlPlane hook
+        record = InterventionRecord(id="", reason_code="NEEDS_HUMAN", reason=f"{category}: {reason}",
+                                    step_id=str(len(self.trace)), opened_at=datetime.now(UTC))
+        try:
+            resolution = await self.escalator.escalate(record, screenshot=await self.rt.screenshot(),
+                                                       dialog_message=self.rt.dialog_message)
+        finally:
+            setattr(self.escalator, "before_human_action", None)  # noqa: B010
+        if resolution.kind != "handed_back":
+            raise DiscoveryStop("ESCALATION_" + resolution.kind.upper(), f"the operator did not hand back ({reason})")
+        await self.rt.settle()
+        final = ScreenState.of(await observe(page, tag=False, screenshot=False))
+        for i, step in enumerate(pending):
+            step.after = pending[i + 1].before if i + 1 < len(pending) else final
+            step.result = "ok"
+        self.trace.extend(pending)
+        self.history.append(f"An operator took over ({category}: {reason}) and performed "
+                            f"{len(resolution.human_actions)} action(s). Their note: {resolution.note or 'none'}. "
+                            "Continue from the current screen.")
+        self.escalator.resume("operator handed back during discovery")
+
+    async def _local_point(self, frame: Any, detail: dict[str, Any]) -> list[float]:
+        x, y = float(detail["x"]), float(detail["y"])
+        if frame == self.rt.web.page.main_frame:
+            return [x, y]
+        box = await (await frame.frame_element()).bounding_box()
+        return [x - box["x"], y - box["y"]] if box else [x, y]
 
     # ============================================================ after the loop
 

@@ -56,6 +56,7 @@ class Fault:
     page: str | None
     remaining: int
     ms: int = 0
+    message: str | None = None
 
 
 @dataclass
@@ -118,10 +119,11 @@ class AppState:
 
     # -- faults ------------------------------------------------------------------
 
-    def add_fault(self, tenant: str, name: str, page: str | None, times: int, ms: int) -> None:
+    def add_fault(self, tenant: str, name: str, page: str | None, times: int, ms: int,
+                  message: str | None = None) -> None:
         if name not in FAULT_NAMES:
             raise ValueError(f"unknown fault {name!r}; expected one of {FAULT_NAMES}")
-        self.tenants[tenant].faults.append(Fault(name=name, page=page, remaining=times, ms=ms))
+        self.tenants[tenant].faults.append(Fault(name=name, page=page, remaining=times, ms=ms, message=message))
 
     def take_fault(self, tenant: str, name: str, page: str) -> Fault | None:
         for fault in self.tenants[tenant].faults:

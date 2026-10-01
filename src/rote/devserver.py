@@ -37,8 +37,10 @@ class MockServer:
         response.raise_for_status()
         return response.json()
 
-    def fault(self, fault: str, *, tenant: str = "harbor", page: str | None = None, times: int = 1, ms: int = 0) -> None:
-        self._admin("POST", "/__faults", tenant, json={"fault": fault, "page": page, "times": times, "ms": ms})
+    def fault(self, fault: str, *, tenant: str = "harbor", page: str | None = None, times: int = 1, ms: int = 0,
+              message: str | None = None) -> None:
+        self._admin("POST", "/__faults", tenant,
+                    json={"fault": fault, "page": page, "times": times, "ms": ms, "message": message})
 
     def clear_faults(self) -> None:
         self._admin("DELETE", "/__faults")

@@ -142,6 +142,7 @@ def run(
     base_url: str | None = typer.Option(None, help="Override the tenant's base URL."),
     fault: list[str] = typer.Option([], help="Inject a mock fault first: name[@page][:times] (demo only)."),
     as_json: bool = typer.Option(False, "--json", help="Print the full result as JSON."),
+    console_port: int = typer.Option(8765, help="Operator console port (with --attended)."),
 ) -> None:
     """Replay a capability deterministically (no model in the loop)."""
     from playwright.async_api import async_playwright
@@ -157,8 +158,19 @@ def run(
                             idempotency_key=idempotency_key)
 
     async def go() -> Any:
+        from rote.control.plane import ControlPlane
+
+        plane = ControlPlane(port=console_port) if attended else None
         async with async_playwright() as pw:
-            return await replay(workspace, capability_id, tenant, _parse_inputs(input_), options, playwright=pw)
+            if plane is not None:
+                await plane.start()
+                console.print(f"[dim]operator console (opens when needed): {plane.url}[/dim]")
+            try:
+                return await replay(workspace, capability_id, tenant, _parse_inputs(input_), options, playwright=pw,
+                                    escalator=plane)
+            finally:
+                if plane is not None:
+                    await plane.stop()
 
     result = asyncio.run(go())
     if as_json:
@@ -181,6 +193,7 @@ def discover(
     effort: str = typer.Option("high", help="Model effort: low | medium | high | xhigh | max."),
     base_url: str | None = typer.Option(None, help="Override the tenant's base URL."),
     max_steps: int | None = typer.Option(None, help="Step budget (default: the tenant policy's)."),
+    console_port: int = typer.Option(8765, help="Operator console port (with --attended)."),
 ) -> None:
     """Let a model complete the goal once, then compile, verify and save the capability."""
     from playwright.async_api import async_playwright
@@ -200,8 +213,18 @@ def discover(
     options = DiscoveryOptions(attended=attended, headless=not headed, max_steps=max_steps)
 
     async def go() -> Any:
+        from rote.control.plane import ControlPlane
+
+        plane = ControlPlane(port=console_port) if attended else None
         async with async_playwright() as pw:
-            return await DiscoveryAgent(workspace, spec, planner, options, playwright=pw).run()
+            if plane is not None:
+                await plane.start()
+                console.print(f"[dim]operator console (opens when needed): {plane.url}[/dim]")
+            try:
+                return await DiscoveryAgent(workspace, spec, planner, options, playwright=pw, escalator=plane).run()
+            finally:
+                if plane is not None:
+                    await plane.stop()
 
     result = asyncio.run(go())
     style = "green" if result.status == "compiled" else "red"

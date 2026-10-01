@@ -106,8 +106,9 @@ def _row_summary(table: dict[str, Any] | None) -> str | None:
 
 def describe_element(e: dict[str, Any]) -> str:
     role = e["role"]
+    tag = f"[{e['ref']}] " if e.get("ref") else ""
     if role == "cell":
-        parts = [f"[{e['ref']}] {json.dumps(e['text'])}"]
+        parts = [f"{tag}{json.dumps(e['text'])}"]
         table = e.get("table")
         label = (e.get("label") or {}).get("text")
         if table and table.get("column"):
@@ -116,7 +117,7 @@ def describe_element(e: dict[str, Any]) -> str:
             parts.append(f"(labeled {json.dumps(label)})")
         return " ".join(parts)
 
-    parts = [f"[{e['ref']}] {role}"]
+    parts = [f"{tag}{role}"]
     if e.get("name"):
         parts.append(json.dumps(e["name"]))
     elif role == "button" and e.get("type") == "image":

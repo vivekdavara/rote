@@ -27,7 +27,7 @@ from playwright.async_api import Browser, Playwright
 from playwright.async_api import Error as PlaywrightError
 from pydantic import BaseModel
 
-from rote.control.protocol import Escalator
+from rote.control.protocol import Escalator, OperatorResolution
 from rote.evidence.runlog import new_run_id
 from rote.registry.approvals import find_approval, load_approvals
 from rote.registry.store import Workspace
@@ -45,6 +45,7 @@ from rote.schema.config import InterruptSpec, Policy, ProductProfile, TenantConf
 from rote.schema.result import (
     DriftSignal,
     ErrorInfo,
+    InterventionRecord,
     OutcomeInfo,
     PreviewInfo,
     RecoveryRecord,
@@ -113,6 +114,9 @@ class ReplayEngine:
         self.rt = Runtime(workspace, tenant, profile, policy, run_id=self.run_id,
                           hold_unknown_dialogs=self.options.attended and escalator is not None)
         self.rt.on_known_dialog = self._known_dialog
+        bind = getattr(escalator, "bind", None)
+        if bind is not None:
+            bind(self.rt, [(s.id, s.intent or "") for s in capability.steps])
         self.redactor = self.rt.redactor
         self.log = self.rt.log
         self.gate = self.rt.gate
@@ -131,6 +135,7 @@ class ReplayEngine:
         self.irreversible_done = False
         self.current_step: str | None = None
         self._recovery_counts: dict[tuple[str, str], int] = {}
+        self._escalations: dict[str, int] = {}
         self._inputs: dict[str, str] = {}
         self._secrets: dict[str, str] = {}
         self.web: WebSession
@@ -505,7 +510,86 @@ class ReplayEngine:
         ))
 
     async def _escalate(self, exc: NeedsHuman, index: int) -> int:
-        raise HardFailure(self._error(exc.code, exc.message + " (escalation not wired yet)", exc.step_id))
+        """Hand the live session to an operator, wait, then resync and return the step to resume at."""
+        assert self.escalator is not None
+        step = self.capability.steps[index]
+        self._escalations[step.id] = self._escalations.get(step.id, 0) + 1
+        if self._escalations[step.id] > 2:
+            raise HardFailure(self._error(exc.code, f"{exc.message} (still unresolved after two handoffs)", step.id,
+                                          evidence=await self._capture_failure()))
+        record = InterventionRecord(id="", reason_code=exc.code, reason=exc.message, step_id=exc.step_id or step.id,
+                                    opened_at=datetime.now(UTC))
+        self.result.status = "needs_intervention"
+        self.log.write_json("result.json", self.result.model_dump(mode="json"))  # interim status for pollers
+        resolution = await self.escalator.escalate(record, screenshot=await self.rt.screenshot(),
+                                                   dialog_message=self.rt.dialog_message)
+        self.result.status = "failed"
+        self.result.interventions.append(record)
+        if resolution.kind == "aborted":
+            raise HardFailure(self._error("ESCALATION_ABORTED", f"operator aborted at {step.id}: {resolution.note or ''}",
+                                          step.id))
+        if resolution.kind == "timed_out":
+            raise HardFailure(self._error("ESCALATION_TIMEOUT", f"no operator resolved {exc.code} at {step.id}",
+                                          step.id))
+        if resolution.kind == "rejected":
+            raise HardFailure(self._error("OPERATOR_REJECTED", f"operator rejected at {step.id}", step.id))
+        return await self._resync(index, resolution)
+
+    async def _resync(self, index: int, resolution: OperatorResolution) -> int:
+        """Work out where the run stands after the operator hands back.
+
+        1. Anything terminal on screen (a business outcome, an error page) wins.
+        2. A resume step named by the operator is honored if the step before it held.
+        3. Otherwise: if the current step's postcondition already holds, the operator
+           did that step: advance. If not, retry it, but only if it is reversible.
+        An irreversible step is never skipped unless the operator attests it was done.
+        """
+        assert self.escalator is not None
+        steps = self.capability.steps
+        attested = set(resolution.attested_steps)
+        self.log.event("resync", at_step=steps[index].id, note=resolution.note, resume_step=resolution.resume_step,
+                       attested=sorted(attested))
+        await self._settle_interrupts(None, after=False)
+
+        if resolution.resume_step:
+            ids = [s.id for s in steps]
+            if resolution.resume_step not in ids:
+                raise HardFailure(self._error("RESYNC_FAILED", f"unknown resume step {resolution.resume_step!r}", None))
+            target = ids.index(resolution.resume_step)
+            previous = steps[target - 1] if target > 0 else None
+            if previous is not None and previous.expect is not None and not await self.cond.holds(
+                    previous.expect, getattr(previous, "target", None)):
+                raise HardFailure(self._error("RESYNC_FAILED", f"cannot resume at {resolution.resume_step}: "
+                                              f"{previous.id}'s postcondition does not hold", previous.id))
+            for skipped in steps[index:target]:
+                if skipped.effect == "irreversible" and skipped.id not in attested:
+                    raise HardFailure(self._error("RESYNC_FAILED", f"resuming at {resolution.resume_step} would skip "
+                                                  f"irreversible step {skipped.id} that nobody attested", skipped.id))
+                self._mark_human(skipped, attested)
+            self.escalator.resume(f"resumed at {resolution.resume_step} (operator's choice)")
+            return target
+
+        step = steps[index]
+        if step.expect is not None and await self.cond.holds(step.expect, getattr(step, "target", None)):
+            self._mark_human(step, attested | ({step.id} if step.effect == "irreversible" else set()))
+            self.escalator.resume(f"{step.id} was completed by the operator")
+            return index + 1
+        if step.effect == "irreversible" and step.id not in attested:
+            raise HardFailure(self._error("RESYNC_FAILED", f"{step.id} is irreversible and its outcome is unknown; "
+                                          "not retrying it", step.id, evidence=await self._capture_failure()))
+        if step.id in attested:
+            self._mark_human(step, attested)
+            self.escalator.resume(f"{step.id} attested by the operator")
+            return index + 1
+        self.escalator.resume(f"retrying {step.id}")
+        return index
+
+    def _mark_human(self, step: Step, attested: set[str]) -> None:
+        self.completed.append(step.id)
+        self.result.steps.append(StepRecord(step_id=step.id, status="performed_by_human"))
+        if step.effect == "irreversible" and step.id in attested:
+            self.irreversible_done = True
+            self.result.commit_state = "committed"
 
     # ================================================================ evidence
 
