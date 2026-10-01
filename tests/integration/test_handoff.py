@@ -155,9 +155,16 @@ async def answer_dialog(client: httpx.AsyncClient, engine: ReplayEngine) -> None
     try:
         state = await wait_for_intervention(client)
     except AssertionError as exc:
-        events = (engine.log.dir / "events.jsonl").read_text().splitlines()[-12:]
-        raise AssertionError(f"no intervention; engine saw dialog={engine.rt.dialog_message!r}, "
-                             f"pending={engine.rt.pending_dialog is not None}; last events: {events}") from exc
+        events = [json.loads(line)["type"] for line in (engine.log.dir / "events.jsonl").read_text().splitlines()[-4:]]
+        stacks = []
+        for task in asyncio.all_tasks():
+            frames = task.get_stack(limit=40)
+            if any("rote" in f.f_code.co_filename for f in frames):
+                stacks.append(f"--- {task.get_name()}\n" + "".join(
+                    f"  {f.f_code.co_filename.split('site-packages/')[-1]}:{f.f_lineno} {f.f_code.co_name}\n"
+                    for f in frames))
+        raise AssertionError(f"no intervention; dialog pending={engine.rt.pending_dialog is not None}; "
+                             f"last events: {events}\nsuspended tasks:\n" + "\n".join(stacks)) from exc
     say(f"intervention {state['intervention']['reason_code']}: {state['intervention']['reason']}; dialog={state['dialog']!r}")
     assert state["intervention"]["reason_code"] == "UNKNOWN_DIALOG"
     assert "wire transfer" in (state["dialog"] or "")
