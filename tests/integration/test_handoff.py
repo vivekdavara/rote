@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
@@ -18,6 +19,7 @@ import pytest
 from playwright.async_api import Browser
 
 from rote.control.plane import ControlPlane
+from rote.control.protocol import OperatorResolution
 from rote.devserver import MockServer, free_port
 from rote.registry.store import Workspace
 from rote.replay.engine import ReplayEngine, ReplayOptions
@@ -30,9 +32,21 @@ pytestmark = pytest.mark.integration
 Operator = Callable[[httpx.AsyncClient, ReplayEngine], Awaitable[None]]
 
 
+def fail_fast(plane: ControlPlane, driver: asyncio.Task[None]) -> None:
+    """If the scripted operator dies, abort the intervention so the run (and its error) surfaces now."""
+    def done(task: asyncio.Task[None]) -> None:
+        if not task.cancelled() and task.exception() is not None:
+            plane._resolve(OperatorResolution("aborted", note=f"scripted operator failed: {task.exception()!r}"))
+    driver.add_done_callback(done)
+
+
+def say(message: str) -> None:
+    print(f"{time.strftime('%H:%M:%S')} operator: {message}", flush=True)
+
+
 async def attended_run(workspace: Workspace, browser: Browser, operator: Operator,
                        timeout_s: int | None = None) -> tuple[RunResult, ControlPlane]:
-    plane = ControlPlane(port=free_port(), timeout_s=timeout_s, announce=lambda message: None)
+    plane = ControlPlane(port=free_port(), timeout_s=timeout_s or 60, announce=lambda message: None)
     capability = workspace.capability(BALANCE)
     engine = ReplayEngine(
         workspace, capability, workspace.tenant("harbor"), workspace.profile("coreone"),
@@ -44,6 +58,7 @@ async def attended_run(workspace: Workspace, browser: Browser, operator: Operato
     async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{plane.port}",
                                  headers={"x-rote-token": plane.token}, timeout=10) as client:
         driver = asyncio.create_task(operator(client, engine))
+        fail_fast(plane, driver)
         try:
             result = await engine.run()
             await asyncio.wait_for(driver, timeout=10)
@@ -138,11 +153,15 @@ async def test_operator_can_abort(workspace: Workspace, browser: Browser, mock: 
 
 async def answer_dialog(client: httpx.AsyncClient, engine: ReplayEngine) -> None:
     state = await wait_for_intervention(client)
+    say(f"intervention {state['intervention']['reason_code']}: {state['intervention']['reason']}; dialog={state['dialog']!r}")
     assert state["intervention"]["reason_code"] == "UNKNOWN_DIALOG"
     assert "wire transfer" in (state["dialog"] or "")
     (await client.post("/api/take", json={"operator": "Test Operator"})).raise_for_status()
+    say("took control; answering the dialog")
     (await client.post("/api/dialog", json={"accept": True})).raise_for_status()
+    say("dialog accepted; handing back")
     (await client.post("/api/handback", json={"note": "acknowledged the wire review notice"})).raise_for_status()
+    say("handed back")
 
 
 async def test_unknown_native_dialog_is_held_for_the_operator(workspace: Workspace, browser: Browser,
@@ -204,13 +223,14 @@ async def test_operator_demonstration_becomes_human_steps_in_the_capability(
     ]
     cassette = Cassette(capability_id=spec.capability_id, tenant="harbor", recorded_at=datetime.now(UTC),
                         source="hand-written script (test fixture)", entries=entries)
-    plane = ControlPlane(port=free_port(), announce=lambda message: None)
+    plane = ControlPlane(port=free_port(), timeout_s=60, announce=lambda message: None)
     agent = DiscoveryAgent(workspace, spec, CassettePlanner(cassette, spec.example(0)),
                            DiscoveryOptions(attended=True), browser=browser, escalator=plane)
     await plane.start()
     async with httpx.AsyncClient(base_url=f"http://127.0.0.1:{plane.port}",
                                  headers={"x-rote-token": plane.token}, timeout=10) as client:
         driver = asyncio.create_task(demonstrate_search(client, agent))
+        fail_fast(plane, driver)
         try:
             result = await agent.run()
             await asyncio.wait_for(driver, timeout=10)
