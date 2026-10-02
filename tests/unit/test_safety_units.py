@@ -1,7 +1,8 @@
-"""Unit tests: policy gate, redaction, input validation, parsing, version ranges."""
+"""Unit tests: policy gate, redaction, input validation, parsing, version ranges, secrets."""
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ from rote.replay.inputs import validate_inputs
 from rote.replay.versions import in_range
 from rote.schema.capability import load_capability
 from rote.schema.config import Policy, load_yaml_model
+from rote.secrets import load_model_env
 from rote.surface.web.actions import ParseError, parse
 
 REPO = Path(__file__).parents[2]
@@ -108,3 +110,14 @@ def test_parse_rejects_garbage() -> None:
 )
 def test_version_ranges(version: str, spec: str, ok: bool) -> None:
     assert in_range(version, spec) is ok
+
+
+def test_model_credentials_in_dotenv_reach_the_client_but_never_override_the_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".env").write_text("ANTHROPIC_API_KEY=from-dotenv\nANTHROPIC_BASE_URL=https://dotenv.invalid\n")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "")  # empty counts as unset; monkeypatch restores both afterwards
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "https://already.set")
+    load_model_env(tmp_path)
+    assert os.environ["ANTHROPIC_API_KEY"] == "from-dotenv"
+    assert os.environ["ANTHROPIC_BASE_URL"] == "https://already.set"

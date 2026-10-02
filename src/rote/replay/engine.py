@@ -229,10 +229,10 @@ class ReplayEngine:
             approvals = load_approvals(self.workspace.root, self.capability.id)
             approval = find_approval(approvals, self.base, tenant=self.tenant.id, overlay_hash=self.overlay_hash)
             if approval is None:
-                raise self._reject(
-                    "NOT_APPROVED",
-                    f"no approval matches content hash {self.result.content_hash}; review it, then `rote approve`",
-                )
+                scope = (f" with {self.tenant.id}'s overlay {self.overlay_hash}; review it, then "
+                         f"`rote approve --tenant {self.tenant.id}`" if self.overlay_hash
+                         else "; review it, then `rote approve`")
+                raise self._reject("NOT_APPROVED", f"no approval matches content hash {self.result.content_hash}{scope}")
             self.log.event("policy_decision", rule="approval", allowed=True, reviewer=approval.reviewer)
 
         if self.capability.side_effects == "irreversible" and self.options.mode == "run":

@@ -128,6 +128,8 @@ def _print_result(result: Any, workspace_root: Path) -> None:
         console.print(f"warning: {w}")
     if result.commit_state != "none":
         console.print(f"commit state: {result.commit_state}")
+    if result.idempotent_replay:
+        console.print("idempotent replay: this key already ran, so this is the recorded result; nothing was clicked")
     console.print(f"[dim]evidence: {workspace_root / 'runs' / result.run_id}[/dim]")
 
 
@@ -142,7 +144,8 @@ def run(
     attended: bool = typer.Option(False, help="An operator is available: escalate instead of failing."),
     headed: bool = typer.Option(False, help="Show the browser window."),
     base_url: str | None = typer.Option(None, help="Override the tenant's base URL."),
-    fault: list[str] = typer.Option([], help="Inject a mock fault first: name[@page][:times] (demo only)."),
+    fault: list[str] = typer.Option([], help="Inject a mock fault first (demo only): NAME, NAME@PAGE or "
+                                    "NAME@PAGE:TIMES, e.g. interstitial@search."),
     as_json: bool = typer.Option(False, "--json", help="Print the full result as JSON."),
     console_port: int = typer.Option(8765, help="Operator console port (with --attended)."),
 ) -> None:
@@ -205,11 +208,14 @@ def discover(
     from rote.discovery.planner import AnthropicPlanner, CassettePlanner, Planner
     from rote.registry.store import Workspace
     from rote.schema.spec import load_spec
+    from rote.secrets import load_model_env
 
     if live == (cassette is not None):
         raise typer.BadParameter("choose exactly one of --live or --cassette PATH")
     spec = load_spec(spec_path)
     workspace = Workspace(base_url_overrides={spec.tenant: base_url} if base_url else {})
+    if live:
+        load_model_env(workspace.root)
     planner: Planner = (CassettePlanner(load_cassette(cassette), spec.example(0)) if cassette
                         else AnthropicPlanner(effort=effort))
     options = DiscoveryOptions(attended=attended, headless=not headed, max_steps=max_steps)
@@ -263,10 +269,11 @@ def doctor(probe: bool = typer.Option(False, help="Make a one-token API call to 
     import httpx
 
     from rote.registry.store import Workspace
-    from rote.secrets import resolve_secrets
+    from rote.secrets import load_model_env, resolve_secrets
 
     workspace = Workspace()
-    checks: list[tuple[str, bool, str]] = []
+    load_model_env(workspace.root)
+    checks: list[tuple[str, bool | None, str]] = []  # None: optional and not set up
     checks.append(("python", sys.version_info >= (3, 11), sys.version.split()[0]))
     for folder in ("apps", "tenants", "policies", "specs"):
         checks.append((f"workspace/{folder}", (workspace.root / folder).is_dir(), str(workspace.root / folder)))
@@ -283,7 +290,7 @@ def doctor(probe: bool = typer.Option(False, help="Make a one-token API call to 
     key = bool(os.environ.get("ANTHROPIC_API_KEY"))
     token = bool(os.environ.get("ANTHROPIC_AUTH_TOKEN"))
     base = os.environ.get("ANTHROPIC_BASE_URL")
-    checks.append(("model credentials", key or token,
+    checks.append(("model credentials", (key or token) or None,
                    "ANTHROPIC_API_KEY set" if key else ("ANTHROPIC_AUTH_TOKEN set" if token else
                                                         "none (only live discovery needs them)")))
     checks.append(("model endpoint", True, base or "default (api.anthropic.com)"))
@@ -298,8 +305,11 @@ def doctor(probe: bool = typer.Option(False, help="Make a one-token API call to 
             checks.append(("model probe", True, f"served by {reply.model}"))
         except Exception as exc:  # noqa: BLE001 - doctor reports whatever went wrong
             checks.append(("model probe", False, f"{type(exc).__name__}: {str(exc)[:160]}"))
+    marks = {True: "[green]ok[/]  ", None: "[yellow]--[/]  ", False: "[red]FAIL[/]"}
     for name, ok, detail in checks:
-        console.print(f"{'[green]ok[/]  ' if ok else '[red]FAIL[/]'} {name:<22} {escape(detail)}")
+        console.print(f"{marks[ok]} {name:<22} {escape(detail)}")
+    if any(ok is False for _, ok, _ in checks):
+        raise typer.Exit(1)
 
 
 # ------------------------------------------------------------------------------ demo
@@ -351,7 +361,7 @@ def review(capability_id: str, tenant: str = typer.Option("harbor", "--tenant", 
 
     workspace = Workspace()
     capability = workspace.capability(capability_id)
-    console.print(f"[bold]{capability.id}[/] v{capability.version}  ({capability.side_effects} side effects)")
+    console.print(f"[bold]{capability.id}[/] v{capability.version}  side effects: {capability.side_effects}")
     console.print(capability.summary)
     console.print(f"content hash: {capability.content_hash()}")
     console.print(f"contract hash: {capability.contract_hash()}")

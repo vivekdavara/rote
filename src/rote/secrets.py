@@ -37,3 +37,17 @@ def resolve_secrets(tenant: TenantConfig, workspace: Path) -> tuple[dict[str, st
         else:
             missing.append(f"{name} (set {env_var})")
     return values, missing
+
+
+MODEL_ENV = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_BASE_URL")
+
+
+def load_model_env(workspace: Path) -> None:
+    """Let model credentials kept in the workspace's .env reach the Anthropic client.
+
+    The client reads only the process environment. A variable that is already set wins over .env.
+    """
+    dotenv = load_dotenv(workspace / ".env")
+    for name in MODEL_ENV:
+        if dotenv.get(name) and not os.environ.get(name):
+            os.environ[name] = dotenv[name]

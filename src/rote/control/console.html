@@ -100,7 +100,8 @@ const api = (path, body) => fetch(path + (path.includes("?") ? "&" : "?") + "t="
 let state = null, stepsRendered = false;
 const operator = () => $("operator").value.trim() || "operator";
 const log = (text) => { const li = document.createElement("li"); li.textContent = text; $("log").prepend(li); };
-const act = (body, text) => api("/api/input", body).then(() => log(text)).catch((e) => alert(e.message));
+const act = (body, text) => api("/api/input", body)
+  .then((r) => log(r.target ? `${text} on ${r.target}` : text)).catch((e) => alert(e.message));
 
 async function refresh() {
   try { state = await api("/api/state"); } catch (e) { $("lease").textContent = "console offline"; return; }

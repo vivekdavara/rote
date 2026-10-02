@@ -252,13 +252,17 @@ class ControlPlane:
             body = await request.json()
             kind = body.get("kind")
             page = self.rt.web.page
+            target: str | None = None  # what the click landed on, echoed to the operator's action list
             if kind == "click":
                 x, y = float(body["x"]), float(body["y"])
                 facts = await self._facts_at(x, y)
                 if self.before_human_action is not None:
                     await self.before_human_action("click", {"x": x, "y": y, "facts": facts})
                 await page.mouse.click(x, y)
-                self._record("click", {"x": round(x), "y": round(y), **self._summary(facts)})
+                summary = self._summary(facts)
+                self._record("click", {"x": round(x), "y": round(y), **summary})
+                if summary.get("role") and summary.get("name"):  # redacted like the event log; the live view is masked
+                    target = self.rt.redactor.text(f'{summary["role"]} "{summary["name"]}"')
             elif kind == "type":
                 text = str(body.get("text", ""))
                 facts = await self._focused()
@@ -279,7 +283,7 @@ class ControlPlane:
                 self._record("scroll", {"dy": dy})
             else:
                 raise HTTPException(status_code=400, detail=f"unknown input kind {kind!r}")
-            return JSONResponse({"ok": True})
+            return JSONResponse({"ok": True, "target": target})
 
         @app.post("/api/dialog")
         async def dialog(request: Request) -> Response:
