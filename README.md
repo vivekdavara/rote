@@ -35,7 +35,7 @@ Python 3.11 and Chromium (installed by Playwright).
 
 ```bash
 make setup     # venv, package + dev extras, Chromium, and .env from .env.example
-make test      # 125 tests: unit + integration against the mock, no API key needed
+make test      # 126 tests: unit + integration against the mock, no API key needed
 make demo      # regenerates evidence/ end to end, no API key needed (about 3 minutes)
 ```
 

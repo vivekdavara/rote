@@ -1,4 +1,4 @@
-"""Discovery end to end with a scripted cassette (no model): trace -> compile -> verify -> outcomes."""
+"""Discovery end to end from recorded decisions (no model): trace -> compile -> verify -> outcomes."""
 
 from __future__ import annotations
 
@@ -24,6 +24,8 @@ from .conftest import FIXTURES, REPO, run_balance
 pytestmark = pytest.mark.integration
 
 SCRIPTED = FIXTURES / "cassettes" / "get_savings_balance.scripted.json"
+# Recorded from a real `rote discover --live` run, once one exists (see evidence/01-discovery-live/).
+LIVE = FIXTURES / "cassettes" / "get_savings_balance.live.json"
 
 
 @pytest.fixture
@@ -33,9 +35,9 @@ def discovery_workspace(workspace: Workspace) -> Workspace:
     return workspace
 
 
-async def discover(workspace: Workspace, browser: Browser) -> object:
+async def discover(workspace: Workspace, browser: Browser, cassette: Path = SCRIPTED) -> object:
     spec = load_spec(workspace.root / "specs" / "get_savings_balance.yaml")
-    planner = CassettePlanner(load_cassette(SCRIPTED), spec.example(0))
+    planner = CassettePlanner(load_cassette(cassette), spec.example(0))
     agent = DiscoveryAgent(workspace, spec, planner, DiscoveryOptions(), browser=browser)
     return await agent.run()
 
@@ -92,6 +94,23 @@ async def test_discovery_end_to_end(discovery_workspace: Workspace, browser: Bro
         body = path.read_text()
         for value in ("100234", "100517", "999999", "100900", "1234.56", "Avery Quill", "12 Sample Lane"):
             assert value not in body, f"{value} leaked into {path.name}"
+
+
+@pytest.mark.skipif(not LIVE.exists(), reason="no live discovery cassette yet (see evidence/01-discovery-live/)")
+async def test_live_model_decisions_still_compile_to_a_working_capability(
+    discovery_workspace: Workspace, browser: Browser, mock: MockServer
+) -> None:
+    """The real model's recorded decisions, replayed offline against a fresh mock (another seed)."""
+    result = await discover(discovery_workspace, browser, LIVE)
+    assert result.status == "compiled", result.reason  # type: ignore[attr-defined]
+    verification = result.verification  # type: ignore[attr-defined]
+    assert verification.status == "succeeded"
+    assert verification.outputs == {"savings_balance": {"amount": "318.02", "currency": "USD"}}
+    for member, status, code in [("100234", "succeeded", None), ("999999", "business_outcome", "MEMBER_NOT_FOUND"),
+                                 ("100900", "business_outcome", "ACCESS_RESTRICTED")]:
+        run = await run_balance(discovery_workspace, browser, member)
+        assert run.status == status, run.error
+        assert (run.outcome.code if run.outcome else None) == code
 
 
 async def test_discovering_an_irreversible_capability(discovery_workspace: Workspace, browser: Browser,
