@@ -302,6 +302,33 @@ def doctor(probe: bool = typer.Option(False, help="Make a one-token API call to 
         console.print(f"{'[green]ok[/]  ' if ok else '[red]FAIL[/]'} {name:<22} {escape(detail)}")
 
 
+# ------------------------------------------------------------------------------- MCP
+
+mcp_app = typer.Typer(help="Serve approved capabilities to agents over MCP.", no_args_is_help=True)
+app.add_typer(mcp_app, name="mcp")
+
+
+@mcp_app.command("serve")
+def mcp_serve(tenant: str = typer.Option("harbor", "--tenant", "-t", help="One server per tenant.")) -> None:
+    """Serve this tenant's approved capabilities as MCP tools over stdio."""
+    from rote.mcp.server import serve
+    from rote.registry.store import Workspace
+
+    asyncio.run(serve(Workspace(), tenant))
+
+
+@app.command()
+def catalog(tenant: str = typer.Option("harbor", "--tenant", "-t")) -> None:
+    """List the tools an agent would see for this tenant (approved capabilities only)."""
+    from rote.mcp.server import Catalog
+    from rote.registry.store import Workspace
+
+    for tool in Catalog(Workspace(), tenant).tools():
+        flags = "destructive" if tool.annotations and tool.annotations.destructive_hint else "read-only"
+        console.print(f"[bold]{tool.name}[/] ({flags})  inputs: {', '.join(tool.input_schema['properties'])}")
+        console.print(f"  {escape(tool.description or '')}")
+
+
 # ----------------------------------------------------------------- review, approve
 
 
