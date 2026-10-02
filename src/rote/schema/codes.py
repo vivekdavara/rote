@@ -34,6 +34,7 @@ TAXONOMY: dict[str, CodeInfo] = {
     "COMMIT_TOKEN_INVALID": CodeInfo("rejected", False, "Token is expired, forged, or bound to other inputs/artifact."),
     "IDEMPOTENCY_KEY_REQUIRED": CodeInfo("rejected", False, "Irreversible capabilities need an idempotency key."),
     "COMMIT_IN_PROGRESS": CodeInfo("rejected", True, "Another run holds this idempotency key."),
+    "OVERLAY_INVALID": CodeInfo("rejected", False, "The tenant overlay no longer fits the base, or would change its contract."),
     # recoverable: handled and reported
     "KNOWN_INTERSTITIAL": CodeInfo("recoverable", True, "A known notice was dismissed."),
     "KNOWN_DIALOG": CodeInfo("recoverable", True, "A known native dialog was answered per the product profile."),

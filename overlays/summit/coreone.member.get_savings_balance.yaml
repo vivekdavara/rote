@@ -1,0 +1,20 @@
+# Summit Valley FCU runs CoreOne 4.3 configured to require a Branch on member search.
+# Relabels ("Find Member", "Account Holder No.") live in tenants/summit.yaml and need no
+# patch. This overlay holds only the structural difference.
+overlay_for: coreone.member.get_savings_balance
+base_major: 0
+tenant: summit
+version: 1.0.0
+reason: Summit's CoreOne configuration requires a Branch on member search.
+patches:
+  - op: insert_after
+    step: enter_member_number
+    new_step:
+      id: choose_branch
+      intent: Choose the searching branch (required by this tenant's configuration)
+      action: select
+      option: "{{tenant.default_branch}}"
+      target:
+        frame: main
+        locators:
+          - {by: label, text: Branch, role: combobox}

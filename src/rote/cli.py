@@ -343,7 +343,12 @@ def review(capability_id: str, tenant: str = typer.Option("harbor", "--tenant", 
         steps.add_row(str(i), step.id, step.action, step.effect, locators, describe(step.expect) if step.expect else "-")
     console.print(steps)
 
-    approval = find_approval(load_approvals(workspace.root, capability.id), capability, tenant=tenant, overlay_hash=None)
+    overlay = workspace.overlay(capability_id, tenant)
+    if overlay is not None:
+        console.print(f"{tenant} overlay v{overlay.version} {overlay.content_hash()}: {overlay.reason} "
+                      f"({len(overlay.patches)} patch(es))")
+    approval = find_approval(load_approvals(workspace.root, capability.id), capability, tenant=tenant,
+                             overlay_hash=overlay.content_hash() if overlay else None)
     if approval:
         console.print(f"[green]approved[/] for {tenant} by {approval.reviewer} at {approval.approved_at:%Y-%m-%d %H:%M}Z")
     else:
@@ -363,8 +368,15 @@ def approve(
 
     workspace = Workspace()
     capability = workspace.capability(capability_id)
-    approval = record_approval(workspace.root, capability, reviewer=reviewer, tenant=tenant, note=note)
-    console.print(f"approved {capability.id} v{capability.version} {approval.content_hash} by {reviewer}")
+    overlay = workspace.overlay(capability_id, tenant) if tenant else None
+    if overlay is not None:
+        from rote.schema.overlay import apply_overlay
+
+        apply_overlay(capability, overlay)  # refuse to approve an overlay that doesn't fit
+    approval = record_approval(workspace.root, capability, reviewer=reviewer, tenant=tenant, note=note,
+                               overlay_hash=overlay.content_hash() if overlay else None)
+    scope = f" with {tenant}'s overlay {approval.overlay_hash}" if overlay else (f" for {tenant}" if tenant else "")
+    console.print(f"approved {capability.id} v{capability.version} {approval.content_hash}{scope} by {reviewer}")
 
 
 # --------------------------------------------------------------------------- evidence

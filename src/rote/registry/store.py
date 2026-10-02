@@ -8,6 +8,7 @@ from pathlib import Path
 
 from rote.schema.capability import Capability, load_capability
 from rote.schema.config import Policy, ProductProfile, TenantConfig, load_yaml_model
+from rote.schema.overlay import Overlay, apply_overlay, load_overlay
 
 
 def default_root() -> Path:
@@ -25,6 +26,16 @@ class Workspace:
 
     def capability(self, capability_id: str) -> Capability:
         return load_capability(self.capability_path(capability_id))
+
+    def overlay(self, capability_id: str, tenant_id: str) -> Overlay | None:
+        path = self.root / "overlays" / tenant_id / f"{capability_id}.yaml"
+        return load_overlay(path) if path.exists() else None
+
+    def effective(self, capability_id: str, tenant_id: str) -> tuple[Capability, Capability, Overlay | None]:
+        """(effective, base, overlay): the capability as it runs on this tenant."""
+        base = self.capability(capability_id)
+        overlay = self.overlay(capability_id, tenant_id)
+        return (apply_overlay(base, overlay) if overlay else base), base, overlay
 
     def tenant(self, tenant_id: str) -> TenantConfig:
         config = load_yaml_model(TenantConfig, self.root / "tenants" / f"{tenant_id}.yaml")

@@ -6,6 +6,9 @@ product_version: "4.3.1"
 secrets:
   coreone.username: COREONE_USERNAME
   coreone.password: COREONE_PASSWORD
-labels: {}
+# Same vendor product, relabeled. Applied at resolution time, so no artifact changes.
+labels:
+  Member Search: Find Member
+  Member Number: Account Holder No.
 vars:
   default_branch: Main Office

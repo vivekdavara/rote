@@ -45,6 +45,7 @@ from rote.schema.capability import (
 )
 from rote.schema.codes import TAXONOMY
 from rote.schema.config import InterruptSpec, Policy, ProductProfile, TenantConfig
+from rote.schema.overlay import OverlayError
 from rote.schema.result import (
     DriftSignal,
     ErrorInfo,
@@ -97,10 +98,12 @@ class ReplayEngine:
         browser: Browser | None = None,
         escalator: Escalator | None = None,
         overlay_hash: str | None = None,
+        base: Capability | None = None,
         run_id: str | None = None,
     ) -> None:
         self.workspace = workspace
-        self.capability = capability
+        self.capability = capability  # what runs (the base, or the base with this tenant's overlay)
+        self.base = base or capability  # what was reviewed: its hash plus the overlay hash is the identity
         self.tenant = tenant
         self.profile = profile
         self.policy = policy
@@ -127,7 +130,7 @@ class ReplayEngine:
             run_id=self.run_id,
             capability=capability.id,
             version=capability.version,
-            content_hash=capability.content_hash(),
+            content_hash=self.base.content_hash(),
             overlay_hash=overlay_hash,
             tenant=tenant.id,
             status="failed",
@@ -224,7 +227,7 @@ class ReplayEngine:
 
         if self.options.require_approval and not self.options.attended:
             approvals = load_approvals(self.workspace.root, self.capability.id)
-            approval = find_approval(approvals, self.capability, tenant=self.tenant.id, overlay_hash=self.overlay_hash)
+            approval = find_approval(approvals, self.base, tenant=self.tenant.id, overlay_hash=self.overlay_hash)
             if approval is None:
                 raise self._reject(
                     "NOT_APPROVED",
@@ -735,7 +738,13 @@ async def replay(
     options: ReplayOptions | None = None,
     **kwargs: Any,
 ) -> RunResult:
-    capability = workspace.capability(capability_id)
+    try:
+        capability, base, overlay = workspace.effective(capability_id, tenant_id)
+    except OverlayError as exc:
+        now = datetime.now(UTC)
+        return RunResult(run_id=new_run_id("replay"), capability=capability_id, version="?", content_hash="?",
+                         tenant=tenant_id, status="rejected", started_at=now, finished_at=now, duration_ms=0,
+                         error=ErrorInfo(code="OVERLAY_INVALID", category="rejected", message=str(exc)))
     engine = ReplayEngine(
         workspace,
         capability,
@@ -744,6 +753,8 @@ async def replay(
         workspace.policy(capability.product.name, tenant_id),
         inputs,
         options,
+        base=base,
+        overlay_hash=overlay.content_hash() if overlay else None,
         **kwargs,
     )
     return await engine.run()
