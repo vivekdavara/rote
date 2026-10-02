@@ -1,0 +1,23 @@
+### Frame "banner"  path=/banner
+Headings: CoreOne
+Controls:
+  [e1] link "Log Off"
+
+### Frame "nav"  path=/nav
+Controls:
+  [e2] link "Member Search"
+  [e3] link "Account Inquiry"
+  [e4] link "Reports"
+  [e5] link "Administration"
+  [e6] link "Main Menu"
+
+### Frame "main"  path=/member
+Headings: Member Detail
+Messages: Access to this member record is restricted.
+Controls:
+  [e7] link "Back to Search"
+Visible text:
+  Member Detail
+  Access to this member record is restricted.
+  Contact a supervisor if you need access to this record.
+  Back to Search

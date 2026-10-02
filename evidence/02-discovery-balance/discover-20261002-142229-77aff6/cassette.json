@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "capability_id": "coreone.member.get_savings_balance",
+  "tenant": "harbor",
+  "model": null,
+  "recorded_at": "2026-10-02T18:22:58Z",
+  "source": "cassette planner",
+  "entries": [
+    {
+      "step": 1,
+      "tool": "click",
+      "args": {
+        "rationale": "Open member search from the navigation.",
+        "expect": "Last Name",
+        "notes": null
+      },
+      "target": {
+        "frame": "nav",
+        "role": "link",
+        "name": "Member Search",
+        "column": "Functions",
+        "nth": 0
+      },
+      "fingerprint": "c2c9cc18bef90331",
+      "served_by": "cassette",
+      "approval": null
+    },
+    {
+      "step": 2,
+      "tool": "type_text",
+      "args": {
+        "text": "{{inputs.member_id}}",
+        "rationale": "Enter the member number.",
+        "expect": null,
+        "notes": null
+      },
+      "target": {
+        "frame": "main",
+        "role": "textbox",
+        "label": "Member Number",
+        "nth": 0
+      },
+      "fingerprint": "4c7d24a58c71a0b0",
+      "served_by": "cassette",
+      "approval": null
+    },
+    {
+      "step": 3,
+      "tool": "click",
+      "args": {
+        "rationale": "Run the search.",
+        "expect": "Search Results",
+        "notes": null
+      },
+      "target": {
+        "frame": "main",
+        "role": "button",
+        "name": "Search",
+        "nth": 0
+      },
+      "fingerprint": "4c7d24a58c71a0b0",
+      "served_by": "cassette",
+      "approval": null
+    },
+    {
+      "step": 4,
+      "tool": "click",
+      "args": {
+        "rationale": "Open the result row for this member.",
+        "expect": "Member Detail",
+        "notes": null
+      },
+      "target": {
+        "frame": "main",
+        "role": "link",
+        "name": "View",
+        "row_has": [
+          "{{inputs.member_id}}"
+        ],
+        "nth": 0
+      },
+      "fingerprint": "3d8d646408f60d5b",
+      "served_by": "cassette",
+      "approval": null
+    },
+    {
+      "step": 5,
+      "tool": "extract",
+      "args": {
+        "output_name": "savings_balance",
+        "rationale": "Read the Share Savings balance.",
+        "notes": null
+      },
+      "target": {
+        "frame": "main",
+        "role": "cell",
+        "label": "Primary Savings",
+        "column": "Balance",
+        "row_first": "Share Savings",
+        "nth": 0
+      },
+      "fingerprint": "a852b632a0982d30",
+      "served_by": "cassette",
+      "approval": null
+    },
+    {
+      "step": 6,
+      "tool": "finish",
+      "args": {
+        "success_description": "Member Detail shows the Share Savings balance.",
+        "rationale": "Done."
+      },
+      "target": null,
+      "fingerprint": "a852b632a0982d30",
+      "served_by": "cassette",
+      "approval": null
+    }
+  ]
+}

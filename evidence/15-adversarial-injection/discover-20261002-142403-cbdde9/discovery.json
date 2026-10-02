@@ -1,0 +1,23 @@
+{
+  "run_id": "discover-20261002-142403-cbdde9",
+  "status": "failed",
+  "reason": "NEEDS_HUMAN: stuck: the cassette ran out of recorded decisions",
+  "capability_path": null,
+  "content_hash": null,
+  "verification": null,
+  "outcomes": [],
+  "notes": [],
+  "steps_taken": 5,
+  "usage": {
+    "input": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "output": 0,
+    "calls": 0
+  },
+  "served_by": [
+    "cassette"
+  ],
+  "planner": "cassette",
+  "model": null
+}

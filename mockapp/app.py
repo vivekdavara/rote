@@ -453,7 +453,7 @@ def create_app(seed: int | None = None, faults_enabled: bool | None = None) -> F
         source["balance"] = str(Decimal(source["balance"]) - deposit)
         source["available"] = str(Decimal(source["available"]) - deposit)
         member["accounts"].append({
-            "type": "Share Savings", "suffix": suffix, "description": review["nick"] or review["type"],
+            "type": review["type"], "suffix": suffix, "description": review["nick"] or review["type"],
             "balance": str(deposit), "available": str(deposit),
         })
         tenant.commits += 1

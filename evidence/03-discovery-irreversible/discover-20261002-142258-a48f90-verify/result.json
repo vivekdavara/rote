@@ -1,0 +1,126 @@
+{
+  "run_id": "discover-20261002-142258-a48f90-verify",
+  "capability": "coreone.member.open_sub_account",
+  "version": "0.1.0",
+  "content_hash": "sha256:9d566949f27d34eff8858fcfeed3114effde1131cce81f9c8a471d68d63011ab",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "preview",
+  "outputs": {
+    "review_share_type": "Regular Savings",
+    "review_deposit": {
+      "amount": "10.00",
+      "currency": "USD"
+    },
+    "review_funding_account": "S10 - Everyday Checking"
+  },
+  "preview": {
+    "values": {
+      "review_share_type": "Regular Savings",
+      "review_deposit": {
+        "amount": "10.00",
+        "currency": "USD"
+      },
+      "review_funding_account": "S10 - Everyday Checking"
+    },
+    "commit_token": "eyJjYXAiOiJjb3Jlb25lLm1lbWJlci5vcGVuX3N1Yl9hY2NvdW50IiwiZXhwIjoxNzkwOTY2Mjk0LCJoYXNoIjoic2hhMjU2OjlkNTY2OTQ5ZjI3ZDM0ZWZmODg1OGZjZmVlZDMxMTRlZmZkZTExMzFjY2U4MWY5YzhhNDcxZDY4ZDYzMDExYWIiLCJpbnB1dHMiOiI2NTY3OTNhNGMxNmFkN2M4NDJhNDJhNjgxNTE4NDdjMSIsIm92ZXJsYXkiOm51bGwsInByZXZpZXciOiI5ZmM5NWJkMTliMjBiNjljOTA2MTBiYWJlN2FiZGFjMCIsInRlbmFudCI6ImhhcmJvciJ9.4FjxmqfKYaENvjPY-H8T_ACPL2BTn5Q9lTky7nDh_d0",
+    "expires_at": "2026-10-02T18:38:14Z"
+  },
+  "outcome": null,
+  "error": null,
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 189
+    },
+    {
+      "step_id": "enter_member_number",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 27
+    },
+    {
+      "step_id": "open_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 153
+    },
+    {
+      "step_id": "open_view",
+      "status": "ok",
+      "strategy": "table_cell",
+      "duration_ms": 151
+    },
+    {
+      "step_id": "open_open_sub_account",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 153
+    },
+    {
+      "step_id": "choose_share_type",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 24
+    },
+    {
+      "step_id": "enter_nickname",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 20
+    },
+    {
+      "step_id": "enter_initial_deposit",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 20
+    },
+    {
+      "step_id": "choose_funding_account",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 16
+    },
+    {
+      "step_id": "check_truth_in_savings_disclosure",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 36
+    },
+    {
+      "step_id": "open_continue",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 155
+    },
+    {
+      "step_id": "read_review_share_type",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 18
+    },
+    {
+      "step_id": "read_review_deposit",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 15
+    },
+    {
+      "step_id": "read_review_funding_account",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 15
+    }
+  ],
+  "recoveries": [],
+  "interventions": [],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-02T18:23:12.597257Z",
+  "finished_at": "2026-10-02T18:23:14.413600Z",
+  "duration_ms": 1815
+}

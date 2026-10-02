@@ -302,6 +302,17 @@ def doctor(probe: bool = typer.Option(False, help="Make a one-token API call to 
         console.print(f"{'[green]ok[/]  ' if ok else '[red]FAIL[/]'} {name:<22} {escape(detail)}")
 
 
+# ------------------------------------------------------------------------------ demo
+
+
+@app.command()
+def demo(evidence: Path = typer.Option(Path("evidence"), help="Where to write the evidence.")) -> None:
+    """Regenerate /evidence/ end to end with no API key (never touches 01-discovery-live/)."""
+    from rote.demo import run_demo
+
+    raise typer.Exit(run_demo(evidence.resolve()))
+
+
 # ------------------------------------------------------------------------------- MCP
 
 mcp_app = typer.Typer(help="Serve approved capabilities to agents over MCP.", no_args_is_help=True)

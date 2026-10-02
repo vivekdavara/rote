@@ -1,0 +1,6 @@
+{
+  "status": "succeeded",
+  "idempotent_replay": true,
+  "commit_state": "committed",
+  "note": "returned from the idempotency ledger"
+}

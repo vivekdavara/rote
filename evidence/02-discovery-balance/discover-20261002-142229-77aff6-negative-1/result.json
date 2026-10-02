@@ -1,0 +1,77 @@
+{
+  "run_id": "discover-20261002-142229-77aff6-negative-1",
+  "capability": "coreone.member.get_savings_balance",
+  "version": "0.1.0",
+  "content_hash": "sha256:7470b57361f0fcf216f22aa611af16e8b9537e61d61bfdf534a8626c24a18143",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "failed",
+  "outputs": null,
+  "preview": null,
+  "outcome": null,
+  "error": {
+    "code": "UNEXPECTED_STATE",
+    "category": "hard_failure",
+    "message": "step open_search: expected text 'Search Results' visible in frame 'main' and text '{{inputs.member_id}}' visible in frame 'main'",
+    "step_id": "open_search",
+    "step_intent": "Run the search.",
+    "expected": "text 'Search Results' visible in frame 'main' and text '{{inputs.member_id}}' visible in frame 'main'",
+    "observed": {
+      "frames": [
+        {
+          "frame": "top",
+          "path": "/main",
+          "headings": [],
+          "messages": []
+        },
+        {
+          "frame": "banner",
+          "path": "/banner",
+          "headings": [
+            "CoreOne"
+          ],
+          "messages": []
+        },
+        {
+          "frame": "main",
+          "path": "/search",
+          "headings": [
+            "Member Search"
+          ],
+          "messages": [
+            "No members found matching the search criteria."
+          ]
+        }
+      ]
+    },
+    "evidence": [
+      "failure/screenshot.png",
+      "failure/snapshot.txt"
+    ],
+    "retryable": false,
+    "hint": null
+  },
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 188
+    },
+    {
+      "step_id": "enter_member_number",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 27
+    }
+  ],
+  "recoveries": [],
+  "interventions": [],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-02T18:22:35.585271Z",
+  "finished_at": "2026-10-02T18:22:46.374528Z",
+  "duration_ms": 10789
+}

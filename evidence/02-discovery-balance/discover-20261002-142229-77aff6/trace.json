@@ -1,0 +1,141 @@
+[
+  {
+    "step": 1,
+    "tool": "click",
+    "frame": "nav",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": "Last Name",
+    "rationale": "Open member search from the navigation.",
+    "locators": [
+      {
+        "by": "role",
+        "role": "link",
+        "name": "Member Search"
+      },
+      {
+        "by": "css",
+        "css": "body > font > table > tbody > tr:nth-of-type(2) > td > a",
+        "brittle": true
+      }
+    ],
+    "target": "[e2] link \"Member Search\""
+  },
+  {
+    "step": 2,
+    "tool": "type_text",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Enter the member number.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Member Number",
+        "role": "textbox"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > table > tbody > tr:nth-of-type(1) > td:nth-of-type(2) > input:nth-of-type(1)",
+        "brittle": true
+      }
+    ],
+    "target": "[e7] textbox label=\"Member Number\" value=\"\""
+  },
+  {
+    "step": 3,
+    "tool": "click",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": "Search Results",
+    "rationale": "Run the search.",
+    "locators": [
+      {
+        "by": "role",
+        "role": "button",
+        "name": "Search"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > table > tbody > tr:nth-of-type(3) > td:nth-of-type(2) > input:nth-of-type(1)",
+        "brittle": true
+      }
+    ],
+    "target": "[e10] button \"Search\""
+  },
+  {
+    "step": 4,
+    "tool": "click",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": "Member Detail",
+    "rationale": "Open the result row for this member.",
+    "locators": [
+      {
+        "by": "table_cell",
+        "headers": [
+          "Member #"
+        ],
+        "row": {
+          "Member #": "{{inputs.member_id}}"
+        },
+        "then": {
+          "role": "link",
+          "name": "View"
+        }
+      },
+      {
+        "by": "role",
+        "role": "link",
+        "name": "View"
+      },
+      {
+        "by": "css",
+        "css": "body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(2) > td:nth-of-type(5) > a",
+        "brittle": true
+      }
+    ],
+    "target": "[e12] link \"View\" (row: Member #=[member_id#f45fdd10], Name=[name#bd1a4d30], Branch=Main Office, Status=Active)"
+  },
+  {
+    "step": 5,
+    "tool": "extract",
+    "frame": "main",
+    "result": "extracted",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Read the Share Savings balance.",
+    "locators": [
+      {
+        "by": "table_cell",
+        "headers": [
+          "Account Type",
+          "Balance"
+        ],
+        "row": {
+          "Account Type": "Share Savings"
+        },
+        "column": "Balance"
+      },
+      {
+        "by": "css",
+        "css": "body > font > table:nth-of-type(3) > tbody > tr:nth-of-type(2) > td:nth-of-type(4)",
+        "brittle": true
+      }
+    ],
+    "target": "[e21] \"[balance#fbb5517a]\" (column \"Balance\"; row: Account Type=Share Savings, Suffix=S00, Description=Primary Savings, Balance=[balance#fbb5517a], Available=$1,209.56)"
+  }
+]

@@ -591,7 +591,11 @@ class DiscoveryAgent:
             "run_id": result.run_id, "status": result.status, "reason": result.reason,
             "capability_path": str(result.capability_path) if result.capability_path else None,
             "content_hash": result.capability.content_hash() if result.capability else None,
-            "verification": result.verification.model_dump(mode="json") if result.verification else None,
+            # The verify run's own folder holds its (redacted) result; its outputs belong to a different member
+            # than this run's redactor knows about, so only the verdict is copied here.
+            "verification": {"run_id": result.verification.run_id, "status": result.verification.status,
+                             "code": result.verification.error.code if result.verification.error else None}
+            if result.verification else None,
             "outcomes": [o.__dict__ for o in result.outcomes], "notes": result.notes,
             "steps_taken": result.steps_taken, "usage": result.usage, "served_by": sorted(set(self.served_by)),
             "planner": self.planner.name, "model": self.planner.model,

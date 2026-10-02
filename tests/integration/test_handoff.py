@@ -203,7 +203,7 @@ async def demonstrate_search(client: httpx.AsyncClient, agent: object) -> None:
     button = await main.get_by_role("button", name="Search").bounding_box()
     (await client.post("/api/input", json={"kind": "click", "x": button["x"] + 5,
                                            "y": button["y"] + 5})).raise_for_status()
-    await asyncio.sleep(0.5)
+    await main.get_by_text("Search Results").wait_for(timeout=15000)  # like a person, wait for the page
     (await client.post("/api/handback", json={"note": "Type the member number, then press Search."})).raise_for_status()
 
 

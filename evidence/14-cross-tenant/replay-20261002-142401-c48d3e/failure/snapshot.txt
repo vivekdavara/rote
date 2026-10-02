@@ -1,0 +1,33 @@
+### Frame "banner"  path=/banner
+Headings: CoreOne
+Controls:
+  [e1] link "Log Off"
+
+### Frame "nav"  path=/nav
+Controls:
+  [e2] link "Find Member"
+  [e3] link "Account Inquiry"
+  [e4] link "Reports"
+  [e5] link "Administration"
+  [e6] link "Main Menu"
+
+### Frame "main"  path=/search
+Headings: Find Member
+Messages: Branch is required.
+Controls:
+  [e7] textbox label="Account Holder No." value="[member_id#f45fdd10]"
+  [e8] button (image button, no accessible name) label="Account Holder No."
+  [e9] textbox label="Last Name" value=""
+  [e10] combobox label="Branch" options=["-- Select --", "Main Office", "Harborview", "Eastside"] selected="-- Select --"
+  [e11] button "Search"
+  [e12] button "Clear"
+Visible text:
+  Find Member
+  Account Holder No.:	 
+  Last Name:	
+  Branch:	
+  -- Select --
+  Main Office
+  Harborview
+  Eastside
+  Branch is required.

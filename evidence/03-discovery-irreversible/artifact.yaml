@@ -1,0 +1,401 @@
+schema_version: 1
+id: coreone.member.open_sub_account
+version: 0.1.0
+summary: Open a new share sub-account for a member, funded from one of their accounts.
+product:
+  name: coreone
+  versions: '>=4.2,<5'
+surface: web
+side_effects: irreversible
+inputs:
+  member_id:
+    type: string
+    description: Six-digit member number.
+    pattern: ^[0-9]{6}$
+    sensitive: member_id
+  share_type:
+    type: string
+    enum:
+    - Regular Savings
+    - Holiday Club
+    - Money Market
+  nickname:
+    type: string
+    pattern: ^[A-Za-z0-9 ]{1,20}$
+  deposit:
+    type: decimal
+    description: Initial deposit in dollars.
+  funding_suffix:
+    type: string
+    description: Suffix of the member's account that funds the deposit.
+    pattern: ^S[0-9]{2}$
+outputs:
+  review_share_type:
+    type: string
+    description: Share type as shown on the review screen.
+    cardinality: one
+  review_deposit:
+    type: money
+    description: Initial deposit as shown on the review screen.
+    cardinality: one
+  review_funding_account:
+    type: string
+    description: Funding account as shown on the review screen.
+    cardinality: one
+  confirmation_number:
+    type: string
+    description: CoreOne's confirmation number for the new sub-account.
+    cardinality: one
+preview_outputs:
+- review_share_type
+- review_deposit
+- review_funding_account
+outcomes:
+  VALIDATION_REJECTED:
+    description: CoreOne rejected the request; the app's message says why.
+    after_step: open_continue
+    when:
+      any:
+      - text_visible: Initial deposit must be at least $5.00.
+        frame: main
+      - text_visible: Initial deposit exceeds the available balance in the funding account.
+        frame: main
+requires:
+- session:coreone
+steps:
+- id: open_member_search
+  intent: Open member search.
+  effect: read_only
+  expect:
+    text_visible: Last Name
+    frame: main
+  provenance: llm
+  action: click
+  target:
+    frame: nav
+    locators:
+    - by: role
+      role: link
+      name: Member Search
+    - by: css
+      css: body > font > table > tbody > tr:nth-of-type(2) > td > a
+      brittle: true
+    description: link 'Member Search'
+- id: enter_member_number
+  intent: Enter the member number.
+  effect: read_only
+  expect:
+    value_equals: '{{inputs.member_id}}'
+  provenance: llm
+  action: fill
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: Member Number
+      role: textbox
+    - by: css
+      css: body > font > form > table > tbody > tr:nth-of-type(1) > td:nth-of-type(2) > input:nth-of-type(1)
+      brittle: true
+    description: textbox labeled 'Member Number'
+  value: '{{inputs.member_id}}'
+- id: open_search
+  intent: Run the search.
+  effect: read_only
+  expect:
+    all:
+    - text_visible: Search Results
+      frame: main
+    - text_visible: '{{inputs.member_id}}'
+      frame: main
+  provenance: llm
+  action: click
+  target:
+    frame: main
+    locators:
+    - by: role
+      role: button
+      name: Search
+    - by: css
+      css: body > font > form > table > tbody > tr:nth-of-type(3) > td:nth-of-type(2) > input:nth-of-type(1)
+      brittle: true
+    description: button 'Search'
+- id: open_view
+  intent: Open this member.
+  effect: read_only
+  expect:
+    all:
+    - text_visible: Member Detail
+      frame: main
+    - text_visible: '{{inputs.member_id}}'
+      frame: main
+    - text_visible: '{{inputs.funding_suffix}}'
+      frame: main
+  provenance: llm
+  action: click
+  target:
+    frame: main
+    locators:
+    - by: table_cell
+      headers:
+      - 'Member #'
+      row:
+        'Member #': '{{inputs.member_id}}'
+      then:
+        role: link
+        name: View
+    - by: role
+      role: link
+      name: View
+    - by: css
+      css: body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(2) > td:nth-of-type(5) > a
+      brittle: true
+    description: link 'View'
+- id: open_open_sub_account
+  intent: Start a new sub-account.
+  effect: read_only
+  expect:
+    all:
+    - text_visible: Initial Deposit
+      frame: main
+    - text_visible: '{{inputs.member_id}}'
+      frame: main
+    - text_visible: '{{inputs.share_type}}'
+      frame: main
+    - text_visible: '{{inputs.funding_suffix}}'
+      frame: main
+  provenance: llm
+  action: click
+  target:
+    frame: main
+    locators:
+    - by: role
+      role: link
+      name: Open Sub-Account
+    - by: css
+      css: body > font > a:nth-of-type(1)
+      brittle: true
+    description: link 'Open Sub-Account'
+- id: choose_share_type
+  intent: Choose the share type.
+  effect: read_only
+  provenance: llm
+  action: select
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: Share Type
+      role: combobox
+    - by: css
+      css: body > font > form > table > tbody > tr:nth-of-type(1) > td:nth-of-type(2) > select
+      brittle: true
+    description: combobox labeled 'Share Type'
+  option: '{{inputs.share_type}}'
+- id: enter_nickname
+  intent: Enter the nickname.
+  effect: read_only
+  expect:
+    value_equals: '{{inputs.nickname}}'
+  provenance: llm
+  action: fill
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: Nickname
+      role: textbox
+    - by: css
+      css: body > font > form > table > tbody > tr:nth-of-type(2) > td:nth-of-type(2) > input
+      brittle: true
+    description: textbox labeled 'Nickname'
+  value: '{{inputs.nickname}}'
+- id: enter_initial_deposit
+  intent: Enter the initial deposit.
+  effect: read_only
+  expect:
+    value_equals: '{{inputs.deposit}}'
+  provenance: llm
+  action: fill
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: Initial Deposit
+      role: textbox
+    - by: css
+      css: body > font > form > table > tbody > tr:nth-of-type(3) > td:nth-of-type(2) > input
+      brittle: true
+    description: textbox labeled 'Initial Deposit'
+  value: '{{inputs.deposit}}'
+- id: choose_funding_account
+  intent: Choose the funding account.
+  effect: read_only
+  provenance: llm
+  action: select
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: Funding Account
+      role: combobox
+    - by: css
+      css: body > font > form > table > tbody > tr:nth-of-type(4) > td:nth-of-type(2) > select
+      brittle: true
+    description: combobox labeled 'Funding Account'
+  option: '{{inputs.funding_suffix}}'
+- id: check_truth_in_savings_disclosure
+  intent: The disclosure was provided.
+  effect: read_only
+  provenance: llm
+  action: check
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: Truth-in-Savings disclosure provided to member
+      role: checkbox
+    - by: css
+      css: body > font > form > table > tbody > tr:nth-of-type(5) > td:nth-of-type(1) > input
+      brittle: true
+    description: checkbox labeled 'Truth-in-Savings disclosure provided to member'
+  checked: true
+- id: open_continue
+  intent: Continue to review.
+  effect: read_only
+  expect:
+    all:
+    - text_visible: Please review and confirm
+      frame: main
+    - text_visible: '{{inputs.member_id}}'
+      frame: main
+    - text_visible: '{{inputs.share_type}}'
+      frame: main
+    - text_visible: '{{inputs.nickname}}'
+      frame: main
+    - text_visible: '{{inputs.deposit}}'
+      frame: main
+    - text_visible: '{{inputs.funding_suffix}}'
+      frame: main
+  provenance: llm
+  action: click
+  target:
+    frame: main
+    locators:
+    - by: role
+      role: button
+      name: Continue
+    - by: css
+      css: body > font > form > table > tbody > tr:nth-of-type(6) > td:nth-of-type(2) > input:nth-of-type(1)
+      brittle: true
+    description: button 'Continue'
+- id: read_review_share_type
+  intent: Read the share type on review.
+  effect: read_only
+  provenance: llm
+  action: extract
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: Share Type
+    - by: css
+      css: body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(2) > td:nth-of-type(2)
+      brittle: true
+    description: value labeled 'Share Type'
+  output: review_share_type
+  parse: string
+- id: read_review_deposit
+  intent: Read the deposit on review.
+  effect: read_only
+  provenance: llm
+  action: extract
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: Initial Deposit
+    - by: css
+      css: body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(4) > td:nth-of-type(2)
+      brittle: true
+    description: value labeled 'Initial Deposit'
+  output: review_deposit
+  parse: money
+- id: read_review_funding_account
+  intent: Read the funding account on review.
+  effect: read_only
+  provenance: llm
+  action: extract
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: Funding Account
+    - by: css
+      css: body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(5) > td:nth-of-type(2)
+      brittle: true
+    description: value labeled 'Funding Account'
+  output: review_funding_account
+  parse: string
+- id: open_confirm
+  intent: Confirm the sub-account.
+  effect: irreversible
+  expect:
+    all:
+    - text_visible: Sub-Account Opened
+      frame: main
+    - text_visible: '{{inputs.member_id}}'
+      frame: main
+    - text_visible: '{{inputs.share_type}}'
+      frame: main
+    - text_visible: '{{inputs.deposit}}'
+      frame: main
+  provenance: llm
+  action: click
+  target:
+    frame: main
+    locators:
+    - by: role
+      role: button
+      name: Confirm
+    - by: css
+      css: body > font > form > input:nth-of-type(3)
+      brittle: true
+    description: button 'Confirm'
+- id: read_confirmation_number
+  intent: Read the confirmation number.
+  effect: read_only
+  provenance: llm
+  action: extract
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: 'Confirmation #'
+    - by: css
+      css: body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(1) > td:nth-of-type(2)
+      brittle: true
+    description: 'value labeled ''Confirmation #'''
+  output: confirmation_number
+  parse: string
+success:
+  all:
+  - text_visible: Sub-Account Opened
+    frame: main
+  - text_visible: '{{inputs.member_id}}'
+    frame: main
+  - text_visible: '{{inputs.share_type}}'
+    frame: main
+  - text_visible: '{{inputs.deposit}}'
+    frame: main
+  - output_present: review_share_type
+  - output_present: review_deposit
+  - output_present: review_funding_account
+  - output_present: confirmation_number
+provenance:
+  source: discovered
+  run_id: discover-20261002-142258-a48f90
+  served_by:
+  - cassette
+  recorded_on: harbor
+  recorded_at: '2026-10-02T18:23:12Z'

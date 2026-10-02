@@ -1,0 +1,20 @@
+### Frame "banner"  path=/banner
+Headings: CoreOne
+Controls:
+  [e1] link "Log Off"
+
+### Frame "nav"  path=/nav
+Controls:
+  [e2] link "Member Search"
+  [e3] link "Account Inquiry"
+  [e4] link "Reports"
+  [e5] link "Administration"
+  [e6] link "Main Menu"
+
+### Frame "main"  path=/search
+Headings: Server Error in '/CoreOne' Application. | Runtime Error
+Visible text:
+  Server Error in '/CoreOne' Application.
+  Runtime Error
+  Description: An application error occurred on the server. The current custom error settings for this application prevent the details of the application error from being viewed remotely.
+  Details: System.NullReferenceException: Object reference not set to an instance of an object.
