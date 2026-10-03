@@ -122,7 +122,9 @@ class ReplayEngine:
         self.rt.on_known_dialog = self._known_dialog
         bind = getattr(escalator, "bind", None)
         if bind is not None:
-            bind(self.rt, [(s.id, s.intent or "") for s in capability.steps])
+            bind(self.rt, [(s.id, s.intent or "") for s in capability.steps],
+                 {"capability": capability.id, "version": capability.version, "tenant": tenant.id,
+                  "summary": capability.summary})
         self.redactor = self.rt.redactor
         self.log = self.rt.log
         self.gate = self.rt.gate

@@ -59,6 +59,7 @@ class ControlPlane:
         self._timeout_override = timeout_s
         self.timeout_s = timeout_s or 900
         self.steps: list[tuple[str, str]] = []
+        self.subject: dict[str, str] = {}  # which capability or goal is stuck: id, version, tenant, summary
         self.token = secrets.token_urlsafe(18)
         self.lease = ControlLease(self._on_transition)
         self.current: InterventionRecord | None = None
@@ -72,10 +73,12 @@ class ControlPlane:
 
     # ----------------------------------------------------------------- lifecycle
 
-    def bind(self, runtime: Runtime, steps: list[tuple[str, str]] | None = None) -> None:
+    def bind(self, runtime: Runtime, steps: list[tuple[str, str]] | None = None,
+             subject: dict[str, str] | None = None) -> None:
         """Attach to the run that owns the live session (called by the engine or the discovery agent)."""
         self.rt = runtime
         self.steps = steps or []
+        self.subject = dict(subject or {})
         self.timeout_s = self._timeout_override or runtime.limits.escalation_timeout_s
 
     @property
@@ -116,7 +119,9 @@ class ControlPlane:
                           console=f"http://127.0.0.1:{self.port}/")
         if screenshot is not None:
             self.rt.log.save_bytes(f"interventions/{record.id}.png", screenshot)
-        self._announce(f"Operator needed ({record.reason_code}): open {self.url}")
+        what = self.subject.get("capability", "the run")
+        self._announce(f"Operator needed for {what} at {record.step_id or 'its current step'} "
+                       f"({record.reason_code}): open {self.url}")
         try:
             resolution = await asyncio.wait_for(asyncio.shield(self._resolution), timeout=self.timeout_s)
         except TimeoutError:
@@ -216,6 +221,7 @@ class ControlPlane:
                 "holder": self.lease.holder,
                 "epoch": self.lease.epoch,
                 "run_id": self.rt.log.run_id,
+                "subject": self.subject,
                 "intervention": record.model_dump(mode="json") if record else None,
                 "dialog": self.rt.dialog_message,
                 "human_actions": len(self.actions),

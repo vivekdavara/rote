@@ -90,6 +90,11 @@ async def click_button(client: httpx.AsyncClient, engine: ReplayEngine, name: st
 async def supervisor_override(client: httpx.AsyncClient, engine: ReplayEngine) -> None:
     state = await wait_for_intervention(client)
     assert state["intervention"]["reason_code"] == "UNKNOWN_MODAL"
+    # Enough context to act on: which capability, where, and why (the brief's first item is the capability).
+    assert state["subject"]["capability"] == "coreone.member.get_savings_balance"
+    assert state["subject"]["tenant"] == "harbor" and state["subject"]["summary"]
+    step = next(s for s in state["steps"] if s["id"] == state["intervention"]["step_id"])
+    assert step["intent"]
     early = await client.post("/api/input", json={"kind": "click", "x": 10, "y": 10})
     assert early.status_code == 409  # the relay refuses input until the operator holds the lease
     (await client.post("/api/take", json={"operator": "Test Operator"})).raise_for_status()

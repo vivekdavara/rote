@@ -53,8 +53,11 @@
     <div class="panel" id="intervention">
       <h2>Intervention</h2>
       <div id="noint" class="muted">Nothing needs you right now.</div>
+      <div id="subject" style="margin-bottom:6px"><span class="code" id="cap"></span> <span class="muted" id="capmeta"></span>
+        <div class="muted" id="capsummary"></div></div>
       <div id="int" hidden>
         <div><span class="code" id="code"></span> <span class="muted">at step</span> <span class="code" id="step"></span></div>
+        <div class="muted" id="intent"></div>
         <div id="reason" style="margin-top:4px"></div>
         <div id="dialogbox" class="dialog" hidden style="margin-top:8px">
           <div><strong>Native dialog:</strong> <span id="dialogmsg"></span></div>
@@ -110,7 +113,14 @@ async function refresh() {
   $("run").textContent = state.run_id;
   const i = state.intervention;
   $("noint").hidden = !!i; $("int").hidden = !i;
-  if (i) { $("code").textContent = i.reason_code; $("step").textContent = i.step_id || "-"; $("reason").textContent = i.reason; }
+  const s = state.subject || {};
+  $("cap").textContent = s.capability || ""; $("capsummary").textContent = s.summary || "";
+  $("capmeta").textContent = [s.version && (/^\d/.test(s.version) ? "v" + s.version : s.version), s.tenant && "tenant " + s.tenant].filter(Boolean).join(" · ");
+  if (i) {
+    $("code").textContent = i.reason_code; $("step").textContent = i.step_id || "-"; $("reason").textContent = i.reason;
+    const step = state.steps.find((x) => x.id === i.step_id);
+    $("intent").textContent = step && step.intent ? step.intent : "";
+  }
   $("dialogbox").hidden = !state.dialog; $("dialogmsg").textContent = state.dialog || "";
   const human = state.lease === "HUMAN_ACTIVE", waiting = state.lease === "AWAITING_OPERATOR";
   $("livebox").className = "live" + (human ? "" : " locked");

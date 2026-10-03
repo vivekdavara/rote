@@ -126,7 +126,8 @@ class DiscoveryAgent:
         self.log = self.rt.log
         bind = getattr(escalator, "bind", None)
         if bind is not None:
-            bind(self.rt, [])
+            bind(self.rt, [], {"capability": spec.capability_id, "version": "draft (discovery)",
+                               "tenant": spec.tenant, "summary": spec.summary})
         self.inputs = spec.example(0)
         for spec_input in spec.inputs.values():
             if spec_input.sensitive:
