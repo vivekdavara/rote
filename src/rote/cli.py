@@ -304,7 +304,10 @@ def doctor(probe: bool = typer.Option(False, help="Make a one-token API call to 
                                                           messages=[{"role": "user", "content": "ping"}])
             checks.append(("model probe", True, f"served by {reply.model}"))
         except Exception as exc:  # noqa: BLE001 - doctor reports whatever went wrong
-            checks.append(("model probe", False, f"{type(exc).__name__}: {str(exc)[:160]}"))
+            body = getattr(exc, "body", None)  # API errors carry the readable reason in body.error.message
+            error = body.get("error") if isinstance(body, dict) else None
+            message = error.get("message") if isinstance(error, dict) and error.get("message") else str(exc)
+            checks.append(("model probe", False, f"{type(exc).__name__}: {message[:300]}"))
     marks = {True: "[green]ok[/]  ", None: "[yellow]--[/]  ", False: "[red]FAIL[/]"}
     for name, ok, detail in checks:
         console.print(f"{marks[ok]} {name:<22} {escape(detail)}")
