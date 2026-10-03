@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+import traceback
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Literal
@@ -60,7 +61,14 @@ from rote.schema.target import Target
 from rote.secrets import resolve_secrets
 from rote.surface.web import actions
 from rote.surface.web.conditions import ConditionEvaluator, describe
-from rote.surface.web.resolver import ResolutionFailure, Resolved, Resolver, element_facts, hit_test
+from rote.surface.web.resolver import (
+    ResolutionFailure,
+    Resolved,
+    Resolver,
+    describe_target,
+    element_facts,
+    hit_test,
+)
 from rote.surface.web.session import WebSession
 
 Mode = Literal["run", "preview", "commit"]
@@ -192,6 +200,15 @@ class ReplayEngine:
         except HardFailure as exc:
             self.result.status = "failed"
             self.result.error = exc.error
+        except NeedsHuman as exc:  # raised where no handoff is possible (signing on, resync): fail with its code
+            self.result.status = "failed"
+            self.result.error = self._error(exc.code, exc.message, exc.step_id, expected=exc.expected,
+                                            observed=exc.observed, hint=exc.hint)
+        except Exception as exc:  # noqa: BLE001 - the result contract holds even when rote itself breaks
+            self.result.status = "failed"
+            path = self.log.save_bytes("failure/traceback.txt", self.redactor.text(traceback.format_exc()).encode())
+            self.result.error = self._error("INTERNAL_ERROR", self.redactor.text(f"{type(exc).__name__}: {exc}"),
+                                            None, evidence=[path])
         finally:
             self.result.warnings.extend(w for w in self.rt.warnings if w not in self.result.warnings)
             self.result.finished_at = datetime.now(UTC)
@@ -227,15 +244,24 @@ class ReplayEngine:
         if violations:
             raise self._reject("POLICY_VIOLATION", "; ".join(violations))
 
-        if self.options.require_approval and not self.options.attended:
+        if self.options.require_approval:
             approvals = load_approvals(self.workspace.root, self.capability.id)
             approval = find_approval(approvals, self.base, tenant=self.tenant.id, overlay_hash=self.overlay_hash)
-            if approval is None:
+            # An attended run may trial an unapproved capability, since an operator supervises it. Irreversible
+            # ones always need an approval.
+            trial = approval is None and self.options.attended and self.capability.side_effects != "irreversible"
+            if approval is None and not trial:
                 scope = (f" with {self.tenant.id}'s overlay {self.overlay_hash}; review it, then "
                          f"`rote approve --tenant {self.tenant.id}`" if self.overlay_hash
                          else "; review it, then `rote approve`")
                 raise self._reject("NOT_APPROVED", f"no approval matches content hash {self.result.content_hash}{scope}")
-            self.log.event("policy_decision", rule="approval", allowed=True, reviewer=approval.reviewer)
+            if trial:
+                self.result.warnings.append("not approved: ran as an attended trial")
+                self.log.event("policy_decision", rule="approval", allowed=True, reviewer=None,
+                               reason="not approved; allowed as an attended trial")
+            else:
+                assert approval is not None
+                self.log.event("policy_decision", rule="approval", allowed=True, reviewer=approval.reviewer)
 
         if self.capability.side_effects == "irreversible" and self.options.mode == "run":
             self.options.mode = "preview"
@@ -561,7 +587,11 @@ class ReplayEngine:
                 target = getattr(handler, "target", None)
                 if target is None:
                     continue
-                resolved = await self.resolver.resolve(target, 3000)
+                try:
+                    resolved = await self.resolver.resolve(target, 3000)
+                except ResolutionFailure as exc:  # the notice looks different now: a person has to clear it
+                    raise NeedsHuman("UNKNOWN_MODAL", f"{spec.code} was detected but its handler could not find "
+                                     f"{describe_target(target)}: {exc}", step_id=step_id, hint=exc.hint) from exc
                 self._require_lease(handler)
                 await self._perform(handler, resolved, self.resolver)
             self.result.recoveries.append(record)

@@ -69,6 +69,9 @@ TAXONOMY: dict[str, CodeInfo] = {
     "ESCALATION_ABORTED": CodeInfo("hard_failure", False, "The operator aborted the run."),
     "OPERATOR_REJECTED": CodeInfo("hard_failure", False, "The operator rejected an action that needed approval."),
     "RESYNC_FAILED": CodeInfo("hard_failure", False, "After hand-back, the page matched no known step state."),
+    "INTERNAL_ERROR": CodeInfo(
+        "hard_failure", False, "rote itself failed unexpectedly; the run's evidence holds the (redacted) traceback."
+    ),
 }
 
 

@@ -494,20 +494,20 @@ class DiscoveryAgent:
         capability = versioned(self._clean(compiled.capability), previous)
         result.notes.extend(compiled.notes)
         result.capability = capability
-        if self.options.save:
-            result.capability_path = save_capability(capability, path)
         if self.options.verify:
             result.verification = await self._replay(capability, self.spec.example(1), "verify")
             self.log.event("checkpoint", step="verify-replay", status=result.verification.status,
                            code=result.verification.error.code if result.verification.error else None)
             if result.verification.status not in ("succeeded", "preview"):
                 result.reason = "VERIFY_FAILED: the compiled artifact did not replay on the second example"
+                if self.options.save:  # keep the draft for review, but never over the registry's (approved) copy
+                    result.capability_path = save_capability(capability, self.log.dir / "artifact.draft.yaml")
                 return
         if self.options.learn_outcomes:
             capability = versioned(await self._learn_outcomes(capability, result), previous)
             result.capability = capability
-            if self.options.save:
-                result.capability_path = save_capability(capability, path)
+        if self.options.save:  # only a verified capability replaces what the registry holds
+            result.capability_path = save_capability(capability, path)
         result.status = "compiled"
 
     def _clean(self, capability: Capability) -> Capability:
