@@ -1,9 +1,11 @@
-"""Unit tests for discovery helpers: templating, data-free checkpoints, cassette binding."""
+"""Unit tests for discovery helpers: templating, data-free checkpoints, fallback postconditions, binding."""
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from rote.discovery.cassette import bind, binding_for, templated
-from rote.discovery.compiler import _data_free, _discriminates, slug, template_text
+from rote.discovery.compiler import _data_free, _discriminates, _fresh_ui_text, slug, template_text
 from rote.discovery.recorder import ScreenState
 from rote.surface.web.observe import FrameView, Observation
 
@@ -31,6 +33,34 @@ def test_discrimination_needs_false_before_and_true_after() -> None:
     assert _discriminates("Search Results", state("Member Search"), state("Member Search Search Results"))
     assert not _discriminates("Member Search", state("Member Search"), state("Member Search Search Results"))
     assert not _discriminates("Missing", state("a"), state("b"))
+
+
+def screen(main: str, *, headings: Sequence[str] = (), labels: Sequence[str] = (), columns: Sequence[str] = ()) -> ScreenState:
+    return ScreenState(fingerprint="f", texts={"nav": "Member Search", "main": main}, headings={"main": list(headings)},
+                       messages={}, values={}, labels={"main": list(labels)}, columns={"main": list(columns)})
+
+
+HOME = screen("Main Menu Bulletins", headings=["Main Menu"])
+SEARCH = screen("Member Search Member Number: Last Name: Search", headings=["Member Search"],
+                labels=["Member Number", "Last Name"])
+RESULTS = screen("Member Search Member Number: Last Name: Search Results Member # Name 100234 Avery Quill",
+                 headings=["Member Search"], labels=["Member Number", "Last Name"], columns=["Member #", "Name"])
+
+
+def test_fallback_uses_a_new_field_label_when_the_heading_was_already_visible() -> None:
+    # "Member Search" heads the new page but was already on screen as the nav link.
+    assert _fresh_ui_text(HOME, SEARCH, INPUTS) == ("main", "Member Number")
+
+
+def test_fallback_uses_a_new_column_title_and_never_a_value() -> None:
+    assert _fresh_ui_text(SEARCH, RESULTS, INPUTS) == ("main", "Member #")
+
+
+def test_fallback_prefers_a_new_heading_and_skips_data() -> None:
+    detail = screen("Member Detail Balance $1,234.56", headings=["Member Detail"], columns=["Balance $1,234.56"])
+    assert _fresh_ui_text(RESULTS, detail, INPUTS) == ("main", "Member Detail")
+    no_heading = screen("Balance $1,234.56", columns=["Balance $1,234.56"])
+    assert _fresh_ui_text(RESULTS, no_heading, INPUTS) is None
 
 
 def test_slugs_are_identifiers() -> None:

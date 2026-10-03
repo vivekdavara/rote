@@ -9,7 +9,8 @@ Decisions it makes, each recorded in ``notes`` so a reviewer can see why:
   checkpoint text.
 * A step's postcondition must *discriminate*: false before the action, true
   after. The model's proposed ``expect`` is used if it passes that test.
-  Otherwise the new heading is used. Checkpoints never contain data, except
+  Otherwise the first UI text the action brought up is used: a heading, else a
+  field label, else a column title. Checkpoints never contain data, except
   echoes of inputs, which are added on purpose so a wrong-member page can never
   pass.
 * The success checkpoint is the final screen's discriminating conditions plus
@@ -79,6 +80,19 @@ def _discriminates(text: str, before: ScreenState, after: ScreenState) -> bool:
     return not before.shows(text) and after.shows(text)
 
 
+def _fresh_ui_text(before: ScreenState, after: ScreenState, inputs: dict[str, str]) -> tuple[str, str] | None:
+    """(frame, text) for the first UI text the action brought up: a heading, else a field label, else a column title.
+
+    Only the screen's own vocabulary qualifies, never its values, so a postcondition can't bake in a member's data.
+    """
+    for kind in (after.headings, after.labels, after.columns):
+        for frame, texts in kind.items():
+            for text in texts:
+                if _discriminates(text, before, after) and _data_free(text, inputs):
+                    return frame, text
+    return None
+
+
 def _postcondition(step: TraceStep, inputs: dict[str, str], notes: list[str]) -> Any:
     assert step.before is not None and step.after is not None
     before, after = step.before, step.after
@@ -92,14 +106,12 @@ def _postcondition(step: TraceStep, inputs: dict[str, str], notes: list[str]) ->
     if expect and _data_free(expect, inputs) and _discriminates(expect, before, after):
         conditions.append(TextVisible(text_visible=template_text(expect, inputs), frame=after.frame_showing(expect)))
     else:
+        fresh = _fresh_ui_text(before, after, inputs)
         if expect:
-            notes.append(f"step {step.index}: the model's expect {expect!r} did not discriminate; used a heading")
-        for frame, headings in after.headings.items():
-            fresh = [h for h in headings if h not in before.headings.get(frame, []) and not before.shows(h)
-                     and _data_free(h, inputs)]
-            if fresh:
-                conditions.append(TextVisible(text_visible=fresh[0], frame=frame))
-                break
+            instead = f"used {fresh[1]!r}, which appeared with the action" if fresh else "nothing else appeared"
+            notes.append(f"step {step.index}: the model's expect {expect!r} did not discriminate; {instead}")
+        if fresh:
+            conditions.append(TextVisible(text_visible=fresh[1], frame=fresh[0]))
     # Input echoes: if the destination shows the input (the member number on Member
     # Detail), require it. Alone an echo may not discriminate, but next to a
     # discriminating condition it guarantees the right record, not just the right page.

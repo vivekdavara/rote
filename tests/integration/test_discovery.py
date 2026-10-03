@@ -103,6 +103,11 @@ async def test_live_model_decisions_still_compile_to_a_working_capability(
     """The real model's recorded decisions, replayed offline against a fresh mock (another seed)."""
     result = await discover(discovery_workspace, browser, LIVE)
     assert result.status == "compiled", result.reason  # type: ignore[attr-defined]
+    capability = load_capability(result.capability_path)  # type: ignore[attr-defined]
+    # The first live run left two clicks without a postcondition: the model's proposed text was already on
+    # screen and the fallback looked only at headings. Every action must now be checked.
+    unchecked = [s.id for s in capability.steps if not isinstance(s, ExtractStep) and s.expect is None]
+    assert unchecked == [], f"steps without a postcondition: {unchecked}"
     verification = result.verification  # type: ignore[attr-defined]
     assert verification.status == "succeeded"
     assert verification.outputs == {"savings_balance": {"amount": "318.02", "currency": "USD"}}

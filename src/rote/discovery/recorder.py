@@ -41,20 +41,32 @@ class ScreenState:
     headings: dict[str, list[str]]
     messages: dict[str, list[str]]
     values: dict[str, Any]
+    # UI vocabulary, never data: the labels of form fields and the column titles of data tables.
+    labels: dict[str, list[str]] = field(default_factory=dict)
+    columns: dict[str, list[str]] = field(default_factory=dict)
 
     @classmethod
     def of(cls, observation: Observation) -> ScreenState:
         texts, headings, messages, values = {}, {}, {}, {}
+        labels: dict[str, list[str]] = {}
+        columns: dict[str, list[str]] = {}
         for f in observation.frames:
             key = f.name or "top"
             texts[key] = norm(f.text)
             headings[key] = list(f.headings)
             messages[key] = list(f.messages)
+            labels[key], columns[key] = [], []
             for e in f.elements:
+                label = (e.get("label") or {}).get("text")
                 if e["role"] in FORM_ROLES:
-                    ident = f"{key}:{e['role']}:{(e.get('label') or {}).get('text') or e.get('name')}"
+                    ident = f"{key}:{e['role']}:{label or e.get('name')}"
                     values[ident] = e.get("checked") if "checked" in e else e.get("value")
-        return cls(observation.fingerprint, texts, headings, messages, values)
+                    if label and label not in labels[key]:
+                        labels[key].append(label)
+                for header in (e.get("table") or {}).get("headers") or []:
+                    if header and header not in columns[key]:
+                        columns[key].append(header)
+        return cls(observation.fingerprint, texts, headings, messages, values, labels, columns)
 
     def shows(self, text: str) -> bool:
         wanted = norm(text)
