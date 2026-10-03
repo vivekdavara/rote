@@ -1,0 +1,69 @@
+{
+  "run_id": "replay-20261003T120237-cd9462",
+  "capability": "coreone.member.get_savings_balance",
+  "version": "0.1.0",
+  "content_hash": "sha256:937b894e5d0b01ebfde9c5ffd99866863ecfb4969fbe059abeefb66c935fc657",
+  "overlay_hash": null,
+  "tenant": "summit",
+  "status": "failed",
+  "outputs": null,
+  "preview": null,
+  "outcome": null,
+  "error": {
+    "code": "UNEXPECTED_STATE",
+    "category": "hard_failure",
+    "message": "step open_member_search: expected text 'Member Number' visible in frame 'main'",
+    "step_id": "open_member_search",
+    "step_intent": "Open Member Search to look up the member.",
+    "expected": "text 'Member Number' visible in frame 'main'",
+    "observed": {
+      "frames": [
+        {
+          "frame": "top",
+          "path": "/main",
+          "headings": [],
+          "messages": []
+        },
+        {
+          "frame": "banner",
+          "path": "/banner",
+          "headings": [
+            "CoreOne"
+          ],
+          "messages": []
+        },
+        {
+          "frame": "main",
+          "path": "/search",
+          "headings": [
+            "Find Member"
+          ],
+          "messages": []
+        }
+      ]
+    },
+    "evidence": [
+      "failure/screenshot.png",
+      "failure/snapshot.txt"
+    ],
+    "retryable": false,
+    "hint": null
+  },
+  "commit_state": "none",
+  "steps": [],
+  "recoveries": [],
+  "interventions": [],
+  "drift": [
+    {
+      "step_id": "open_member_search",
+      "matched_strategy": "css",
+      "primary_strategy": "role",
+      "note": "the primary role locator no longer matches; css did"
+    }
+  ],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-03T16:02:37.614446Z",
+  "finished_at": "2026-10-03T16:02:39.591912Z",
+  "duration_ms": 1977
+}

@@ -136,6 +136,6 @@
         "brittle": true
       }
     ],
-    "target": "[e21] \"[balance#ef6ac32b]\" (column \"Balance\"; row: Account Type=Share Savings, Suffix=S00, Description=Primary Savings, Balance=[balance#ef6ac32b], Available=$1,209.56)"
+    "target": "[e21] \"[balance#ef6ac32b]\" (column \"Balance\"; row: Account Type=Share Savings, Suffix=S00, Description=Primary Savings, Balance=[balance#ef6ac32b], Available=[available#3958d6ec])"
   }
 ]

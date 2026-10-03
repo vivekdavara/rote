@@ -1,3 +1,0 @@
-{"seq":1,"ts":"2026-10-03T14:47:24.112724Z","run_id":"replay-20261003T104724-c92eca","type":"run_started","data":{"capability":"coreone.member.open_sub_account","version":"0.1.0","content_hash":"sha256:2fd474e9740e80bea03227e081558bb75c1ea0bd09c5d5751e832c74acc24540","tenant":"harbor","mode":"commit","attended":false}}
-{"seq":2,"ts":"2026-10-03T14:47:24.113162Z","run_id":"replay-20261003T104724-c92eca","type":"policy_decision","data":{"rule":"approval","allowed":true,"reviewer":"demo reviewer (scripted by `rote demo`)"}}
-{"seq":3,"ts":"2026-10-03T14:47:24.113394Z","run_id":"replay-20261003T104724-c92eca","type":"run_finished","data":{"status":"rejected","code":"COMMIT_TOKEN_INVALID","duration_ms":0}}

@@ -18,6 +18,23 @@ leaves this folder alone).
 | `…-negative-N/`, `…-negative-N-confirm/` | Outcome learning: the negative example's run, then the confirming replay |
 | `artifact.yaml` | The capability exactly as this run compiled it |
 
+## Redacted after the fact
+
+This run predates two masking fixes. Its screenshots masked the extracted balance only after extraction and
+left the rest of the Balance and Available columns visible, and the extract step's logged description
+included the table row. On 2026-10-03, after the run, these files were redacted:
+
+- **Screenshots:** in `discover-…/screens/04-click.png`, `05-extract.png`, `…-verify/screens/04-open_view.png`
+  and `05-read_savings_balance.png`, the Balance and Available cells were painted over in the mask colour
+  (`#20242a`). The cell positions were measured by reproducing the two member pages in the same pinned
+  browser (1280×800).
+- **Logs:** in `discover-…/events.jsonl` and `trace.json`, one Available amount in the extract step's
+  description was replaced with `[available#3958d6ec]`, the pseudonym today's code writes.
+
+Nothing else changed: the decisions, timings and results are as recorded. OCR of every screenshot finds no
+seeded member value. The unredacted originals are in this repo's history (commit `f51237a`); all of the data
+is synthetic.
+
 ## What it exposed
 
 In `artifact.yaml`, two of the clicks (`open_member_search` and `open_search`) have no postcondition. The
