@@ -267,7 +267,7 @@ class ControlPlane:
                 await page.mouse.click(x, y)
                 summary = self._summary(facts)
                 self._record("click", {"x": round(x), "y": round(y), **summary})
-                if summary.get("role") and summary.get("name"):  # redacted like the event log; the live view is masked
+                if summary.get("role") and summary.get("name"):  # redacted like the event log (the live view isn't)
                     target = self.rt.redactor.text(f'{summary["role"]} "{summary["name"]}"')
             elif kind == "type":
                 text = str(body.get("text", ""))

@@ -31,11 +31,11 @@ change on every start, `__doPostBack` links, and a fault-injection API. All data
 
 ## Setup
 
-Python 3.11 and Chromium (installed by Playwright).
+Python 3.11 or newer, and Chromium (installed by Playwright).
 
 ```bash
 make setup     # venv, package + dev extras, Chromium, and .env from .env.example
-make test      # 132 tests: unit + integration against the mock, no API key needed
+make test      # 137 tests: unit + integration against the mock, no API key needed
 make demo      # regenerates evidence/ end to end, no API key needed (2–3 minutes; OCR-checks screenshots on macOS)
 ```
 

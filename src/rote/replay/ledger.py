@@ -6,8 +6,11 @@ repeated key returns the recorded result instead of running again, and a key
 still in progress is refused. An unknown commit outcome is recorded as such and
 never retried.
 
-SQLite in ``.rote/`` (gitignored). In production this is the system-of-record
-store: encrypted at rest and shared by every worker.
+SQLite in ``.rote/`` (gitignored). Results are kept unredacted, because a
+repeated key must return exactly what the first call returned to its caller;
+that makes this store as sensitive as the app's own data. In production it is
+the system-of-record store: encrypted at rest, retention-limited, and shared by
+every worker.
 """
 
 from __future__ import annotations

@@ -4,7 +4,11 @@ A handoff through the operator console UI, done by a person (Vivek, the author) 
 committed as recorded. `rote demo` leaves this folder alone.
 
 - **Command:** `rote run coreone.member.get_savings_balance -i member_id=<the spec's first example> --attended --fault unknown_modal@search`,
-  on 2026-10-03 against the local mock. The capability was version 0.2.0, recompiled from the live run's decisions.
+  on 2026-10-03 against the local mock. The capability is [artifact.yaml](artifact.yaml): version 0.2.0,
+  recompiled from the live run's decisions. Its content hash matches the run's `result.json`, and apart from
+  version and provenance it is identical to `../02-discovery-balance/artifact.yaml`. Version 0.2.0 had no
+  approval yet; an attended run may trial an unapproved read-only capability (current code records that as a
+  warning; irreversible capabilities always need an approval).
 - **What happened:** an unrecognized Fraud Alert covered the member-number field. The run stopped and opened an
   intervention naming the capability, the step (`enter_member_number`) and the reason. The person then took
   control in the console, clicked **Supervisor Override** on the live view, and handed back. The engine resynced
