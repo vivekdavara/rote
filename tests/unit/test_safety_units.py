@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytest
 
+from rote.evidence.runlog import new_run_id
 from rote.policy.gate import PolicyGate
 from rote.redaction.detectors import find, scrub
+from rote.redaction.lint import lint_capability
 from rote.redaction.redactor import Redactor
 from rote.replay.inputs import validate_inputs
 from rote.replay.versions import in_range
-from rote.schema.capability import load_capability
+from rote.schema.capability import ProvenanceInfo, load_capability
 from rote.schema.config import Policy, load_yaml_model
 from rote.secrets import load_model_env
 from rote.surface.web.actions import ParseError, parse
@@ -121,3 +124,22 @@ def test_model_credentials_in_dotenv_reach_the_client_but_never_override_the_env
     load_model_env(tmp_path)
     assert os.environ["ANTHROPIC_API_KEY"] == "from-dotenv"
     assert os.environ["ANTHROPIC_BASE_URL"] == "https://already.set"
+
+
+def test_run_ids_never_look_like_card_numbers() -> None:
+    # "replay-20261003-143942-..." passed the Luhn check one second in ten, so the redactor rewrote run ids to
+    # "replay-[card]..." and the artifact lint refused discovered capabilities.
+    assert find(new_run_id("replay")) == []
+    start = datetime(2026, 10, 3)
+    for second in range(0, 86400, 7):
+        run_id = f"replay-{start + timedelta(seconds=second):%Y%m%dT%H%M%S}-abcdef"
+        assert find(run_id) == [] and scrub(run_id) == run_id, run_id
+
+
+def test_artifact_lint_checks_content_but_not_provenance() -> None:
+    capability = load_capability(FIXTURE)
+    luhn_valid = "discover-20261003-143942-f3182b"  # an old-format run id that passes the Luhn check
+    stamped = capability.model_copy(update={"provenance": ProvenanceInfo(source="discovered", run_id=luhn_valid)})
+    assert lint_capability(stamped, []) == []
+    leaked = stamped.model_copy(update={"summary": "Card 4111 1111 1111 1111 on file"})
+    assert any("card" in problem for problem in lint_capability(leaked, []))

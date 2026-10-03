@@ -16,7 +16,9 @@ from rote.schema.events import Event, EventType
 
 
 def new_run_id(prefix: str = "run") -> str:
-    return f"{prefix}-{datetime.now():%Y%m%d-%H%M%S}-{secrets.token_hex(3)}"
+    # The "T" matters: "20261003-143942" is 14 digits joined by a dash, which looks like a card number to the
+    # redactor and the artifact lint whenever it passes the Luhn check (one timestamp in ten).
+    return f"{prefix}-{datetime.now():%Y%m%dT%H%M%S}-{secrets.token_hex(3)}"
 
 
 class RunLog:

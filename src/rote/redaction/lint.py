@@ -18,7 +18,8 @@ from rote.schema.templating import iter_strings
 def lint_capability(capability: Capability, sensitive_values: Iterable[str]) -> list[str]:
     values = [v for v in sensitive_values if v and len(v) >= 3]
     problems: list[str] = []
-    dumped = capability.model_dump(mode="json", by_alias=True, exclude_none=True)
+    # Provenance is written by rote (run id, timestamps, model names), never taken from a screen or an input.
+    dumped = capability.model_dump(mode="json", by_alias=True, exclude_none=True, exclude={"provenance"})
     for text in iter_strings(dumped):
         for value in values:
             if value in text:
