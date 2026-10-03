@@ -1,0 +1,395 @@
+[
+  {
+    "step": 1,
+    "tool": "click",
+    "frame": "nav",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": "Last Name",
+    "rationale": "Open member search.",
+    "locators": [
+      {
+        "by": "role",
+        "role": "link",
+        "name": "Member Search"
+      },
+      {
+        "by": "css",
+        "css": "body > font > table > tbody > tr:nth-of-type(2) > td > a",
+        "brittle": true
+      }
+    ],
+    "target": "[e2] link \"Member Search\""
+  },
+  {
+    "step": 2,
+    "tool": "type_text",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Enter the member number.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Member Number",
+        "role": "textbox"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > table > tbody > tr:nth-of-type(1) > td:nth-of-type(2) > input:nth-of-type(1)",
+        "brittle": true
+      }
+    ],
+    "target": "[e7] textbox label=\"Member Number\" value=\"\""
+  },
+  {
+    "step": 3,
+    "tool": "click",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": "Search Results",
+    "rationale": "Run the search.",
+    "locators": [
+      {
+        "by": "role",
+        "role": "button",
+        "name": "Search"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > table > tbody > tr:nth-of-type(3) > td:nth-of-type(2) > input:nth-of-type(1)",
+        "brittle": true
+      }
+    ],
+    "target": "[e10] button \"Search\""
+  },
+  {
+    "step": 4,
+    "tool": "click",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": "Member Detail",
+    "rationale": "Open this member.",
+    "locators": [
+      {
+        "by": "table_cell",
+        "headers": [
+          "Member #"
+        ],
+        "row": {
+          "Member #": "{{inputs.member_id}}"
+        },
+        "then": {
+          "role": "link",
+          "name": "View"
+        }
+      },
+      {
+        "by": "role",
+        "role": "link",
+        "name": "View"
+      },
+      {
+        "by": "css",
+        "css": "body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(2) > td:nth-of-type(5) > a",
+        "brittle": true
+      }
+    ],
+    "target": "[e12] link \"View\" (row: Member #=[member_id#bd9e9b8a], Name=[name#94085931], Branch=Main Office, Status=Active)"
+  },
+  {
+    "step": 5,
+    "tool": "click",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": "Initial Deposit",
+    "rationale": "Start a new sub-account.",
+    "locators": [
+      {
+        "by": "role",
+        "role": "link",
+        "name": "Open Sub-Account"
+      },
+      {
+        "by": "css",
+        "css": "body > font > a:nth-of-type(1)",
+        "brittle": true
+      }
+    ],
+    "target": "[e7] link \"Open Sub-Account\""
+  },
+  {
+    "step": 6,
+    "tool": "select_option",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Choose the share type.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Share Type",
+        "role": "combobox"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > table > tbody > tr:nth-of-type(1) > td:nth-of-type(2) > select",
+        "brittle": true
+      }
+    ],
+    "target": "[e7] combobox label=\"Share Type\" options=[\"-- Select --\", \"Regular Savings\", \"Holiday Club\", \"Money Market\"] selected=\"-- Select --\""
+  },
+  {
+    "step": 7,
+    "tool": "type_text",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Enter the nickname.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Nickname",
+        "role": "textbox"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > table > tbody > tr:nth-of-type(2) > td:nth-of-type(2) > input",
+        "brittle": true
+      }
+    ],
+    "target": "[e8] textbox label=\"Nickname\" value=\"\""
+  },
+  {
+    "step": 8,
+    "tool": "type_text",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Enter the initial deposit.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Initial Deposit",
+        "role": "textbox"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > table > tbody > tr:nth-of-type(3) > td:nth-of-type(2) > input",
+        "brittle": true
+      }
+    ],
+    "target": "[e9] textbox label=\"Initial Deposit\" value=\"\""
+  },
+  {
+    "step": 9,
+    "tool": "select_option",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Choose the funding account.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Funding Account",
+        "role": "combobox"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > table > tbody > tr:nth-of-type(4) > td:nth-of-type(2) > select",
+        "brittle": true
+      }
+    ],
+    "target": "[e10] combobox label=\"Funding Account\" options=[\"-- Select --\", \"S00 - Primary Savings\", \"S10 - Everyday Checking\"] selected=\"-- Select --\""
+  },
+  {
+    "step": 10,
+    "tool": "set_checkbox",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "The disclosure was provided.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Truth-in-Savings disclosure provided to member",
+        "role": "checkbox"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > table > tbody > tr:nth-of-type(5) > td:nth-of-type(1) > input",
+        "brittle": true
+      }
+    ],
+    "target": "[e11] checkbox label=\"Truth-in-Savings disclosure provided to member\" checked=false"
+  },
+  {
+    "step": 11,
+    "tool": "click",
+    "frame": "main",
+    "result": "ok",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": "Please review and confirm",
+    "rationale": "Continue to review.",
+    "locators": [
+      {
+        "by": "role",
+        "role": "button",
+        "name": "Continue"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > table > tbody > tr:nth-of-type(6) > td:nth-of-type(2) > input:nth-of-type(1)",
+        "brittle": true
+      }
+    ],
+    "target": "[e12] button \"Continue\""
+  },
+  {
+    "step": 12,
+    "tool": "extract",
+    "frame": "main",
+    "result": "extracted",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Read the share type on review.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Share Type"
+      },
+      {
+        "by": "css",
+        "css": "body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(2) > td:nth-of-type(2)",
+        "brittle": true
+      }
+    ],
+    "target": "[e10] \"Holiday Club\" (labeled \"Share Type\")"
+  },
+  {
+    "step": 13,
+    "tool": "extract",
+    "frame": "main",
+    "result": "extracted",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Read the deposit on review.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Initial Deposit"
+      },
+      {
+        "by": "css",
+        "css": "body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(4) > td:nth-of-type(2)",
+        "brittle": true
+      }
+    ],
+    "target": "[e12] \"$25.00\" (labeled \"Initial Deposit\")"
+  },
+  {
+    "step": 14,
+    "tool": "extract",
+    "frame": "main",
+    "result": "extracted",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Read the funding account on review.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Funding Account"
+      },
+      {
+        "by": "css",
+        "css": "body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(5) > td:nth-of-type(2)",
+        "brittle": true
+      }
+    ],
+    "target": "[e13] \"S00 - Primary Savings\" (labeled \"Funding Account\")"
+  },
+  {
+    "step": 15,
+    "tool": "click",
+    "frame": "main",
+    "result": "ok",
+    "effect": "irreversible",
+    "provenance": "llm",
+    "approval": "approved",
+    "expect": "Sub-Account Opened",
+    "rationale": "Confirm the sub-account.",
+    "locators": [
+      {
+        "by": "role",
+        "role": "button",
+        "name": "Confirm"
+      },
+      {
+        "by": "css",
+        "css": "body > font > form > input:nth-of-type(3)",
+        "brittle": true
+      }
+    ],
+    "target": "[e7] button \"Confirm\""
+  },
+  {
+    "step": 16,
+    "tool": "extract",
+    "frame": "main",
+    "result": "extracted",
+    "effect": "read_only",
+    "provenance": "llm",
+    "approval": null,
+    "expect": null,
+    "rationale": "Read the confirmation number.",
+    "locators": [
+      {
+        "by": "label",
+        "text": "Confirmation #"
+      },
+      {
+        "by": "css",
+        "css": "body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(1) > td:nth-of-type(2)",
+        "brittle": true
+      }
+    ],
+    "target": "[e8] \"004512\" (labeled \"Confirmation #\")"
+  }
+]

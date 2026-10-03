@@ -1,0 +1,151 @@
+schema_version: 1
+id: coreone.member.get_savings_balance
+version: 0.1.0
+summary: Look up a member by member number and return the current Share Savings balance.
+product:
+  name: coreone
+  versions: '>=4.2,<5'
+surface: web
+side_effects: none
+inputs:
+  member_id:
+    type: string
+    description: Six-digit member number.
+    pattern: ^[0-9]{6}$
+    sensitive: member_id
+outputs:
+  savings_balance:
+    type: money
+    description: Current balance of the member's Share Savings account.
+    cardinality: one
+    sensitive: balance
+preview_outputs: []
+outcomes:
+  MEMBER_NOT_FOUND:
+    description: No member has this member number.
+    after_step: open_search
+    when:
+      text_visible: No members found matching the search criteria.
+      frame: main
+  ACCESS_RESTRICTED:
+    description: The member record is restricted (for example, an employee account).
+    after_step: open_view
+    when:
+      text_visible: Access to this member record is restricted.
+      frame: main
+requires:
+- session:coreone
+steps:
+- id: open_member_search
+  intent: Open Member Search to look up the member.
+  effect: read_only
+  provenance: llm
+  action: click
+  target:
+    frame: nav
+    locators:
+    - by: role
+      role: link
+      name: Member Search
+    - by: css
+      css: body > font > table > tbody > tr:nth-of-type(2) > td > a
+      brittle: true
+    description: link 'Member Search'
+- id: enter_member_number
+  intent: Enter the member number into the search field.
+  effect: read_only
+  expect:
+    value_equals: '{{inputs.member_id}}'
+  provenance: llm
+  action: fill
+  target:
+    frame: main
+    locators:
+    - by: label
+      text: Member Number
+      role: textbox
+    - by: css
+      css: body > font > form > table > tbody > tr:nth-of-type(1) > td:nth-of-type(2) > input:nth-of-type(1)
+      brittle: true
+    description: textbox labeled 'Member Number'
+  value: '{{inputs.member_id}}'
+- id: open_search
+  intent: Run the member search with the entered member number.
+  effect: read_only
+  provenance: llm
+  action: click
+  target:
+    frame: main
+    locators:
+    - by: role
+      role: button
+      name: Search
+    - by: css
+      css: body > font > form > table > tbody > tr:nth-of-type(3) > td:nth-of-type(2) > input:nth-of-type(1)
+      brittle: true
+    description: button 'Search'
+- id: open_view
+  intent: Open the matching member's record to find their accounts.
+  effect: read_only
+  expect:
+    all:
+    - text_visible: Share Savings
+      frame: main
+    - text_visible: '{{inputs.member_id}}'
+      frame: main
+  provenance: llm
+  action: click
+  target:
+    frame: main
+    locators:
+    - by: table_cell
+      headers:
+      - 'Member #'
+      row:
+        'Member #': '{{inputs.member_id}}'
+      then:
+        role: link
+        name: View
+    - by: role
+      role: link
+      name: View
+    - by: css
+      css: body > font > table:nth-of-type(2) > tbody > tr:nth-of-type(2) > td:nth-of-type(5) > a
+      brittle: true
+    description: link 'View'
+- id: read_savings_balance
+  intent: The Balance cell in the Share Savings row shows the member's current savings balance.
+  effect: read_only
+  provenance: llm
+  action: extract
+  target:
+    frame: main
+    locators:
+    - by: table_cell
+      headers:
+      - Account Type
+      - Balance
+      row:
+        Account Type: Share Savings
+      column: Balance
+    - by: css
+      css: body > font > table:nth-of-type(3) > tbody > tr:nth-of-type(2) > td:nth-of-type(4)
+      brittle: true
+    description: value in column 'Balance'
+  output: savings_balance
+  parse: money
+success:
+  all:
+  - text_visible: Share Savings
+    frame: main
+  - text_visible: '{{inputs.member_id}}'
+    frame: main
+  - output_present: savings_balance
+provenance:
+  source: discovered
+  run_id: discover-20261003-101804-40bd2f
+  model: claude-opus-5-5
+  served_by:
+  - claude-opus-5-5
+  recorded_on: harbor
+  recorded_at: '2026-10-03T14:18:58Z'

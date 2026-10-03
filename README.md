@@ -35,7 +35,7 @@ Python 3.11 and Chromium (installed by Playwright).
 
 ```bash
 make setup     # venv, package + dev extras, Chromium, and .env from .env.example
-make test      # 126 tests: unit + integration against the mock, no API key needed
+make test      # 129 tests: unit + integration against the mock, no API key needed
 make demo      # regenerates evidence/ end to end, no API key needed (about 3 minutes)
 ```
 
@@ -63,10 +63,10 @@ rote doctor            # add --probe to make a one-token call with your API key
 rote discover specs/get_savings_balance.yaml --live --headed
 ```
 
-Or offline, replaying recorded decisions:
+Or offline, replaying the decisions the live model made in `evidence/01-discovery-live/`:
 
 ```bash
-rote discover specs/get_savings_balance.yaml --cassette tests/fixtures/cassettes/get_savings_balance.scripted.json
+rote discover specs/get_savings_balance.yaml --cassette tests/fixtures/cassettes/get_savings_balance.live.json
 ```
 
 Discovery compiles the run into `capabilities/coreone/member.get_savings_balance.yaml`, replays it on the spec's

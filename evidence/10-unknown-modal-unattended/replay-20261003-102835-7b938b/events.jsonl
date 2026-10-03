@@ -1,0 +1,11 @@
+{"seq":1,"ts":"2026-10-03T14:28:35.077468Z","run_id":"replay-20261003-102835-7b938b","type":"run_started","data":{"capability":"coreone.member.get_savings_balance","version":"0.1.0","content_hash":"sha256:937b894e5d0b01ebfde9c5ffd99866863ecfb4969fbe059abeefb66c935fc657","tenant":"harbor","mode":"run","attended":false}}
+{"seq":2,"ts":"2026-10-03T14:28:35.078098Z","run_id":"replay-20261003-102835-7b938b","type":"policy_decision","data":{"rule":"approval","allowed":true,"reviewer":"demo reviewer (scripted by `rote demo`)"}}
+{"seq":3,"ts":"2026-10-03T14:28:35.133503Z","run_id":"replay-20261003-102835-7b938b","type":"action_executed","data":{"step":"user_id","action":"fill","strategy":"label","frame":"top","value":"[secret]"}}
+{"seq":4,"ts":"2026-10-03T14:28:35.159582Z","run_id":"replay-20261003-102835-7b938b","type":"action_executed","data":{"step":"password","action":"fill","strategy":"label","frame":"top","value":"[secret]"}}
+{"seq":5,"ts":"2026-10-03T14:28:35.212369Z","run_id":"replay-20261003-102835-7b938b","type":"action_executed","data":{"step":"sign_on","action":"click","strategy":"role","frame":"top"}}
+{"seq":6,"ts":"2026-10-03T14:28:35.316404Z","run_id":"replay-20261003-102835-7b938b","type":"checkpoint","data":{"step":"login","condition":"text 'Main Menu' visible in frame 'main'","held":true}}
+{"seq":7,"ts":"2026-10-03T14:28:35.318608Z","run_id":"replay-20261003-102835-7b938b","type":"note","data":{"product_version":"4.2"}}
+{"seq":8,"ts":"2026-10-03T14:28:35.360946Z","run_id":"replay-20261003-102835-7b938b","type":"policy_decision","data":{"step":"open_member_search","action":"click","allowed":true,"rule":"ok","reason":"allowed","runtime_effect":"read_only"}}
+{"seq":9,"ts":"2026-10-03T14:28:35.388015Z","run_id":"replay-20261003-102835-7b938b","type":"action_executed","data":{"step":"open_member_search","action":"click","strategy":"role","frame":"nav"}}
+{"seq":10,"ts":"2026-10-03T14:28:35.511975Z","run_id":"replay-20261003-102835-7b938b","type":"checkpoint","data":{"step":"open_member_search","condition":"text 'Member Number' visible in frame 'main'","held":true}}
+{"seq":11,"ts":"2026-10-03T14:28:35.619160Z","run_id":"replay-20261003-102835-7b938b","type":"run_finished","data":{"status":"failed","code":"UNKNOWN_MODAL","duration_ms":541}}

@@ -1,0 +1,77 @@
+{
+  "run_id": "discover-20261003-102718-543b9d-negative-1",
+  "capability": "coreone.member.get_savings_balance",
+  "version": "0.1.0",
+  "content_hash": "sha256:488dc5d48237e268484265923f067e12409057051c48f6cd13ec5abade7798d1",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "failed",
+  "outputs": null,
+  "preview": null,
+  "outcome": null,
+  "error": {
+    "code": "UNEXPECTED_STATE",
+    "category": "hard_failure",
+    "message": "step open_search: expected text 'Member #' visible in frame 'main' and text '{{inputs.member_id}}' visible in frame 'main'",
+    "step_id": "open_search",
+    "step_intent": "Run the member search with the entered member number.",
+    "expected": "text 'Member #' visible in frame 'main' and text '{{inputs.member_id}}' visible in frame 'main'",
+    "observed": {
+      "frames": [
+        {
+          "frame": "top",
+          "path": "/main",
+          "headings": [],
+          "messages": []
+        },
+        {
+          "frame": "banner",
+          "path": "/banner",
+          "headings": [
+            "CoreOne"
+          ],
+          "messages": []
+        },
+        {
+          "frame": "main",
+          "path": "/search",
+          "headings": [
+            "Member Search"
+          ],
+          "messages": [
+            "No members found matching the search criteria."
+          ]
+        }
+      ]
+    },
+    "evidence": [
+      "failure/screenshot.png",
+      "failure/snapshot.txt"
+    ],
+    "retryable": false,
+    "hint": null
+  },
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 183
+    },
+    {
+      "step_id": "enter_member_number",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 29
+    }
+  ],
+  "recoveries": [],
+  "interventions": [],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-03T14:27:24.683279Z",
+  "finished_at": "2026-10-03T14:27:35.392207Z",
+  "duration_ms": 10708
+}

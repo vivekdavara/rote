@@ -117,7 +117,9 @@ class Demo:
                                browser=self.browser)
         result = await agent.run()
         scenario = Scenario(folder, title, "compiled, verified on the second example, outcomes learned")
-        scenario.notes.append(f"decisions replayed from: {source.source}")
+        origin = (f"the live model run ({source.model}, recorded {source.recorded_at:%Y-%m-%d}) kept in "
+                  "`01-discovery-live/`" if source.model else source.source)
+        scenario.notes.append(f"decisions replayed from: {origin}")
         learned = [f"{o.code}={o.status}" for o in result.outcomes]
         verified = result.verification.status if result.verification else "-"
         self.keep(folder, result.run_id)

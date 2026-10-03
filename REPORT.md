@@ -15,9 +15,8 @@ shared runtime: fresh browser context · network allowlist · native-dialog hand
 profile · version fingerprint · redacted evidence · control lease and operator console
 ```
 
-The target is CoreOne, a mock credit-union app built to be hostile to automation: nested framesets, table layouts,
-labels in the neighbouring cell, control names re-randomized on every start, `__doPostBack` links, and a
-fault-injection API that makes every failure in the evidence reproducible.
+The target is CoreOne, a mock credit-union app built to be hostile to automation (framesets, labels in neighbouring
+cells, control names re-randomized on every start), with fault injection that makes every failure reproducible.
 
 Three decisions shape the rest:
 
@@ -27,7 +26,7 @@ Three decisions shape the rest:
 - **Planner calls are stateless.** Each call is a cached prefix (tools, system prompt, goal), a history my code
   writes, and the current observation. The trace is the source of truth, context stays bounded, and recorded
   decisions (a cassette) replay discovery offline. The model is `claude-opus-5-5` with adaptive thinking, strict
-  tools and one action per turn.
+  tools and one action per turn. The live run in `evidence/01-discovery-live/` took 6 calls and 78 s.
 - **The model never logs in or navigates.** The product profile signs in with secrets resolved at run time, and
   there is no navigate tool.
 
@@ -75,7 +74,9 @@ steps:
   visible, enabled match.
 - **Postconditions must discriminate.** The compiler keeps a condition only if it was false before the action and
   true after. It adds input echoes so a page for the wrong member can't pass. Beyond those echoes, conditions
-  hold no data.
+  hold no data. The live run showed why the fallback matters: the model proposed "Member Search", already
+  visible as the nav link, and two clicks compiled unchecked. The fallback now tries new headings, field labels,
+  then column titles, and CI asserts that every live step is checked.
 - **Business outcomes are contract.** "Member not found" is an answer, scoped to the step where it can appear.
   Discovery learns outcomes from the spec's negative examples. It takes the new message where the run diverged,
   rejects it if it appears on any happy-path screen, and confirms it with a replay.
@@ -139,7 +140,7 @@ Irreversible capabilities use **preview, then commit**, because an LLM caller wo
    unknown`, and it is never retried.
 
 Evidence: 16 scenarios, a fault matrix, negative controls (mutated artifacts must fail with the right code), and
-20 of 20 identical replays (p50 824 ms, p95 858 ms). Control names change with the seed; no artifact depends on
+20 of 20 identical replays (p50 825 ms, p95 1414 ms). Control names change with the seed; no artifact depends on
 them.
 
 ## Heterogeneity & multi-tenant
@@ -161,13 +162,13 @@ adapter.
 **Many tenants on one product.** A base capability covers a product version range. Tenant differences live
 outside it:
 
-1. A tenant label dictionary ("Member Search" → "Find Member"), applied at resolution time.
+1. A tenant label dictionary ("Member Search" → "Find Member"), applied to locators and postconditions alike.
 2. Structural overlays keyed by step id: insert, replace or remove a step, or replace a target. Overlays that
    would change the contract hash are refused. Approvals bind the base hash plus the overlay hash.
 
 Summit (v4.3.1, relabeled, requires a Branch) runs the capability discovered on Harbor, using its labels plus one
-inserted step. Without them, replay falls back to brittle CSS locators and reports drift. It then stops at the real
-difference (UNEXPECTED_STATE at `open_search`).
+inserted step. Without them, replay reaches the relabeled link through its brittle CSS locator and reports drift.
+It then stops at the real difference: "Member Number" isn't on screen (UNEXPECTED_STATE at `open_member_search`).
 
 At fleet scale, each run flags a product version outside the artifact's range as drift, and canary replays run
 per tenant on every vendor release. Drift is triaged by how many tenants it hits: if every v4.3 tenant breaks, fix
@@ -190,8 +191,8 @@ and any pending native dialog. The operator can take control, hand back (with a 
 optional resume step), approve, reject or abort.
 
 **The relay is the only way a human can act.** In a headed browser nothing can stop physical input while
-automation drives, so the lease would be fiction. Through the relay it is real. Every human action is logged with
-hit-test facts, such as `button "Supervisor Override"` in frame `main`.
+automation drives, so the lease would be fiction. Through the relay it is real, and every human action is logged
+with hit-test facts such as `button "Supervisor Override"`.
 
 **Resync on hand-back:**
 
@@ -231,12 +232,12 @@ The model never handles credentials, and capabilities can't reference `{{secrets
   The compiler refuses data-like literals.
 
 A PII canary scans everything the demo writes for 15 synthetic member values. It caught a real leak in
-development, a balance in a discovery summary. It now reports no hits across 255 files.
+development, a balance in a discovery summary. It now reports no hits across 290 files.
 
 **Prompt injection** is contained by code, not by trusting the model. The system prompt tells the model screen
 content is data, not instructions, but nothing depends on that. One seeded member's notes hold an injected
-instruction and link. A clearly labelled adversarial script
-obeys it, the allowlist blocks the request to `evil.localhost`, and no artifact is produced.
+instruction and link. A clearly labelled adversarial script obeys it, the allowlist blocks the request to
+`evil.localhost`, and no artifact is produced.
 
 **Limits:**
 
@@ -249,8 +250,8 @@ obeys it, the allowlist blocks the request to `evil.localhost`, and no artifact 
 
 ## Cuts
 
-- **Live-model discovery evidence.** The build environment had no API key, so `evidence/01-discovery-live/`
-  awaits a run from my own terminal. The committed cassettes are hand-written fixtures, and they say so.
+- **Live discovery of the irreversible capability.** Its Confirm needs an operator's approval, so it hasn't been
+  recorded live. Its cassette is a labelled, hand-written fixture.
 - **A second surface adapter.** The mock already forces the hard parts (frames, inferred labels, randomized
   names). A shallow desktop stub would prove less than a careful design.
 - **Scaling infrastructure** (a session broker, a worker pool, a shared ledger). The brief says not to build it.
@@ -259,7 +260,7 @@ obeys it, the allowlist blocks the request to `evil.localhost`, and no artifact 
 
 Next steps, in order:
 
-1. Record live discovery for both specs, so CI replays real model decisions.
+1. Record an attended live discovery of `open_sub_account`, so CI replays real decisions for both specs.
 2. Extract the surface interface and build a UI Automation adapter against a WinForms test app.
 3. Add per-tenant canaries, drift triage and overlay repair proposals.
 4. Build a session broker: leases outside the run process, co-browsing, operator SSO, queues.

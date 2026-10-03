@@ -1,2 +1,0 @@
-{"seq":1,"ts":"2026-10-02T18:23:42.633468Z","run_id":"replay-20261002-142342-931dc3","type":"run_started","data":{"capability":"coreone.member.get_savings_balance","version":"0.1.0","content_hash":"sha256:1051e545ec4fb0c219c57096f266f2d8811e4ab1765aa786cebe327efcd4ee62","tenant":"harbor","mode":"run","attended":false}}
-{"seq":2,"ts":"2026-10-02T18:23:42.633804Z","run_id":"replay-20261002-142342-931dc3","type":"run_finished","data":{"status":"rejected","code":"INVALID_INPUT","duration_ms":0}}

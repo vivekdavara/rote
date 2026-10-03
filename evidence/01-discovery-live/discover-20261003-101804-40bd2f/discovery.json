@@ -1,0 +1,46 @@
+{
+  "run_id": "discover-20261003-101804-40bd2f",
+  "status": "compiled",
+  "reason": null,
+  "capability_path": "/Users/vivekdavara/Downloads/rote/capabilities/coreone/member.get_savings_balance.yaml",
+  "content_hash": "sha256:ed67d2510d31c834001f40cb21d46e34e58b944494e169657db47019ad6d5306",
+  "verification": {
+    "run_id": "discover-20261003-101804-40bd2f-verify",
+    "status": "succeeded",
+    "code": null
+  },
+  "outcomes": [
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "status": "learned",
+      "detail": "detector fires here and nowhere on the happy path",
+      "after_step": "open_search",
+      "detector": "No members found matching the search criteria."
+    },
+    {
+      "code": "ACCESS_RESTRICTED",
+      "status": "learned",
+      "detail": "detector fires here and nowhere on the happy path",
+      "after_step": "open_view",
+      "detector": "Access to this member record is restricted."
+    }
+  ],
+  "notes": [
+    "step 1: the model's expect 'Member Search' did not discriminate; used a heading",
+    "step 1: no discriminating change found; the step has no postcondition",
+    "step 3: no discriminating change found; the step has no postcondition"
+  ],
+  "steps_taken": 5,
+  "usage": {
+    "input": 14000,
+    "cache_read": 14750,
+    "cache_write": 2950,
+    "output": 988,
+    "calls": 6
+  },
+  "served_by": [
+    "claude-opus-5-5"
+  ],
+  "planner": "anthropic",
+  "model": "claude-opus-5-5"
+}

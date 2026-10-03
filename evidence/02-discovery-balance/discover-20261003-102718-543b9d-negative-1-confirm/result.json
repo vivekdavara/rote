@@ -1,0 +1,43 @@
+{
+  "run_id": "discover-20261003-102718-543b9d-negative-1-confirm",
+  "capability": "coreone.member.get_savings_balance",
+  "version": "0.1.0",
+  "content_hash": "sha256:05b0307556d8cfd79d6bb4b4cf5ae8bb309b99b0811d8e9f997eca685acd0379",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "business_outcome",
+  "outputs": null,
+  "preview": null,
+  "outcome": {
+    "code": "MEMBER_NOT_FOUND",
+    "message": "No member has this member number.",
+    "step_id": "open_search",
+    "messages": [
+      "No members found matching the search criteria."
+    ]
+  },
+  "error": null,
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 170
+    },
+    {
+      "step_id": "enter_member_number",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 29
+    }
+  ],
+  "recoveries": [],
+  "interventions": [],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-03T14:27:35.394447Z",
+  "finished_at": "2026-10-03T14:27:36.116461Z",
+  "duration_ms": 721
+}

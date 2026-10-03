@@ -1,0 +1,83 @@
+{
+  "run_id": "discover-20261003-101804-40bd2f-negative-2",
+  "capability": "coreone.member.get_savings_balance",
+  "version": "0.1.0",
+  "content_hash": "sha256:7e4c5ee24d7b2633502d0eae12623bdd8acaf1e3e1660c6c075421862b7a61d5",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "failed",
+  "outputs": null,
+  "preview": null,
+  "outcome": null,
+  "error": {
+    "code": "UNEXPECTED_STATE",
+    "category": "hard_failure",
+    "message": "step open_view: expected text 'Share Savings' visible in frame 'main' and text '{{inputs.member_id}}' visible in frame 'main'",
+    "step_id": "open_view",
+    "step_intent": "Open the matching member's record to find their accounts.",
+    "expected": "text 'Share Savings' visible in frame 'main' and text '{{inputs.member_id}}' visible in frame 'main'",
+    "observed": {
+      "frames": [
+        {
+          "frame": "top",
+          "path": "/main",
+          "headings": [],
+          "messages": []
+        },
+        {
+          "frame": "banner",
+          "path": "/banner",
+          "headings": [
+            "CoreOne"
+          ],
+          "messages": []
+        },
+        {
+          "frame": "main",
+          "path": "/member",
+          "headings": [
+            "Member Detail"
+          ],
+          "messages": [
+            "Access to this member record is restricted."
+          ]
+        }
+      ]
+    },
+    "evidence": [
+      "failure/screenshot.png",
+      "failure/snapshot.txt"
+    ],
+    "retryable": false,
+    "hint": null
+  },
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 51
+    },
+    {
+      "step_id": "enter_member_number",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 26
+    },
+    {
+      "step_id": "open_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 37
+    }
+  ],
+  "recoveries": [],
+  "interventions": [],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-03T14:19:11.037857Z",
+  "finished_at": "2026-10-03T14:19:21.850970Z",
+  "duration_ms": 10811
+}
