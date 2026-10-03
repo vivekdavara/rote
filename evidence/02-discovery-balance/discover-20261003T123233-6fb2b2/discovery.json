@@ -1,0 +1,44 @@
+{
+  "run_id": "discover-20261003T123233-6fb2b2",
+  "status": "compiled",
+  "reason": null,
+  "capability_path": "/var/folders/7h/hp3y6j154sjcmmrblly6t26r0000gn/T/rote-demo-301ntpj7/capabilities/coreone/member.get_savings_balance.yaml",
+  "content_hash": "sha256:937b894e5d0b01ebfde9c5ffd99866863ecfb4969fbe059abeefb66c935fc657",
+  "verification": {
+    "run_id": "discover-20261003T123233-6fb2b2-verify",
+    "status": "succeeded",
+    "code": null
+  },
+  "outcomes": [
+    {
+      "code": "MEMBER_NOT_FOUND",
+      "status": "learned",
+      "detail": "detector fires here and nowhere on the happy path",
+      "after_step": "open_search",
+      "detector": "No members found matching the search criteria."
+    },
+    {
+      "code": "ACCESS_RESTRICTED",
+      "status": "learned",
+      "detail": "detector fires here and nowhere on the happy path",
+      "after_step": "open_view",
+      "detector": "Access to this member record is restricted."
+    }
+  ],
+  "notes": [
+    "step 1: the model's expect 'Member Search' did not discriminate; used 'Member Number', which appeared with the action"
+  ],
+  "steps_taken": 5,
+  "usage": {
+    "input": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "output": 0,
+    "calls": 0
+  },
+  "served_by": [
+    "claude-opus-5-5"
+  ],
+  "planner": "cassette",
+  "model": "claude-opus-5-5"
+}

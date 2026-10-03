@@ -20,7 +20,7 @@ The design and its trade-offs are in **[REPORT.md](REPORT.md)**. What the system
 | 3.3 Deterministic replay | `rote run`: `src/rote/replay/engine.py`, taxonomy in `src/rote/schema/codes.py` |
 | 3.4 Safety and policy | `src/rote/policy/gate.py`, `src/rote/redaction/`, `policies/*.yaml`, commit protocol in `src/rote/replay/commit.py` |
 | 3.5 Evidence | `runs/<id>/events.jsonl`, masked screenshots, failure snapshots; curated in `evidence/` |
-| 3.6 Human handoff | `src/rote/control/` (lease, console, input relay), resync in the engine |
+| 3.6 Human handoff | `src/rote/control/` (lease, console, input relay), resync in the engine; a recorded handoff by a person in `evidence/17-handoff-by-a-person/` |
 | 3.7 Heterogeneity and scale | `src/rote/surface/web/` (the web adapter), `tenants/`, `overlays/`; other surfaces are designed in REPORT.md |
 | Stretch: cross-tenant reuse | `overlays/summit/`, `tenants/summit.yaml`, `tests/integration/test_tenants.py` |
 | Stretch: agent-facing catalog | `rote mcp serve`: `src/rote/mcp/server.py` |

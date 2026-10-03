@@ -93,7 +93,7 @@ view is unmasked because the operator acts on it, and it is never saved. Humans 
 input relay, so the lease is enforced, and each action is logged with what it hit (`button "Supervisor
 Override"`). On hand-back, a postcondition that already holds means the operator did the step. Otherwise a
 reversible step is retried, and an irreversible one is skipped only on the operator's attestation. The evidence
-handoff is a scripted operator using the console's API.
+has it twice: a scripted operator on the console's API, and a person in the console UI, screen-recorded.
 
 ## Safety
 

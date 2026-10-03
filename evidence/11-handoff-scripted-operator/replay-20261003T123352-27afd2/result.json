@@ -1,0 +1,87 @@
+{
+  "run_id": "replay-20261003T123352-27afd2",
+  "capability": "coreone.member.get_savings_balance",
+  "version": "0.1.0",
+  "content_hash": "sha256:937b894e5d0b01ebfde9c5ffd99866863ecfb4969fbe059abeefb66c935fc657",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "succeeded",
+  "outputs": {
+    "savings_balance": {
+      "amount": "[balance#074f8ca0]",
+      "currency": "USD"
+    }
+  },
+  "preview": null,
+  "outcome": null,
+  "error": null,
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 177
+    },
+    {
+      "step_id": "enter_member_number",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 20
+    },
+    {
+      "step_id": "open_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 152
+    },
+    {
+      "step_id": "open_view",
+      "status": "ok",
+      "strategy": "table_cell",
+      "duration_ms": 203
+    },
+    {
+      "step_id": "read_savings_balance",
+      "status": "ok",
+      "strategy": "table_cell",
+      "duration_ms": 20
+    }
+  ],
+  "recoveries": [],
+  "interventions": [
+    {
+      "id": "int-5ed0cd",
+      "reason_code": "UNKNOWN_MODAL",
+      "reason": "step enter_member_number: the control is covered by an unrecognized overlay: \"Fraud Alert This member's account is flagged for review. A supervisor override is required before continuing.\"",
+      "step_id": "enter_member_number",
+      "opened_at": "2026-10-03T16:33:52.947727Z",
+      "resolved_at": "2026-10-03T16:33:53.050115Z",
+      "resolution": "handed_back",
+      "operator": "scripted operator (rote demo)",
+      "note": "Supervisor override applied (scripted).",
+      "human_actions": [
+        {
+          "at": "2026-10-03T16:33:53.047216Z",
+          "kind": "click",
+          "detail": {
+            "x": 595,
+            "y": 220,
+            "frame": "main",
+            "role": "button",
+            "name": "Supervisor Override",
+            "tag": "input",
+            "label": "Fraud Alert"
+          }
+        }
+      ],
+      "attested_steps": []
+    }
+  ],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-03T16:33:52.362462Z",
+  "finished_at": "2026-10-03T16:33:53.724501Z",
+  "duration_ms": 1340
+}

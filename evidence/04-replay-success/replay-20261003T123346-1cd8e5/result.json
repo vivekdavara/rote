@@ -1,0 +1,59 @@
+{
+  "run_id": "replay-20261003T123346-1cd8e5",
+  "capability": "coreone.member.get_savings_balance",
+  "version": "0.1.0",
+  "content_hash": "sha256:937b894e5d0b01ebfde9c5ffd99866863ecfb4969fbe059abeefb66c935fc657",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "succeeded",
+  "outputs": {
+    "savings_balance": {
+      "amount": "[balance#074f8ca0]",
+      "currency": "USD"
+    }
+  },
+  "preview": null,
+  "outcome": null,
+  "error": null,
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 180
+    },
+    {
+      "step_id": "enter_member_number",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 28
+    },
+    {
+      "step_id": "open_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 156
+    },
+    {
+      "step_id": "open_view",
+      "status": "ok",
+      "strategy": "table_cell",
+      "duration_ms": 154
+    },
+    {
+      "step_id": "read_savings_balance",
+      "status": "ok",
+      "strategy": "table_cell",
+      "duration_ms": 20
+    }
+  ],
+  "recoveries": [],
+  "interventions": [],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-03T16:33:46.130049Z",
+  "finished_at": "2026-10-03T16:33:47.139586Z",
+  "duration_ms": 1009
+}

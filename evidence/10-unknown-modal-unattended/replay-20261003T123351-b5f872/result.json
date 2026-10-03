@@ -1,0 +1,72 @@
+{
+  "run_id": "replay-20261003T123351-b5f872",
+  "capability": "coreone.member.get_savings_balance",
+  "version": "0.1.0",
+  "content_hash": "sha256:937b894e5d0b01ebfde9c5ffd99866863ecfb4969fbe059abeefb66c935fc657",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "failed",
+  "outputs": null,
+  "preview": null,
+  "outcome": null,
+  "error": {
+    "code": "UNKNOWN_MODAL",
+    "category": "needs_human",
+    "message": "step enter_member_number: the control is covered by an unrecognized overlay: \"Fraud Alert This member's account is flagged for review. A supervisor override is required before continuing.\"",
+    "step_id": "enter_member_number",
+    "step_intent": "Enter the member number into the search field.",
+    "expected": null,
+    "observed": {
+      "frames": [
+        {
+          "frame": "top",
+          "path": "/main",
+          "headings": [],
+          "messages": []
+        },
+        {
+          "frame": "banner",
+          "path": "/banner",
+          "headings": [
+            "CoreOne"
+          ],
+          "messages": []
+        },
+        {
+          "frame": "main",
+          "path": "/search",
+          "headings": [
+            "Member Search",
+            "Fraud Alert"
+          ],
+          "messages": [
+            "Fraud Alert"
+          ]
+        }
+      ]
+    },
+    "evidence": [
+      "failure/screenshot.png",
+      "failure/snapshot.txt"
+    ],
+    "retryable": false,
+    "hint": null
+  },
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 172
+    }
+  ],
+  "recoveries": [],
+  "interventions": [],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-03T16:33:51.797316Z",
+  "finished_at": "2026-10-03T16:33:52.342344Z",
+  "duration_ms": 544
+}

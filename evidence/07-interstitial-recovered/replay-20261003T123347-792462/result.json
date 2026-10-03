@@ -1,0 +1,66 @@
+{
+  "run_id": "replay-20261003T123347-792462",
+  "capability": "coreone.member.get_savings_balance",
+  "version": "0.1.0",
+  "content_hash": "sha256:937b894e5d0b01ebfde9c5ffd99866863ecfb4969fbe059abeefb66c935fc657",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "succeeded",
+  "outputs": {
+    "savings_balance": {
+      "amount": "[balance#074f8ca0]",
+      "currency": "USD"
+    }
+  },
+  "preview": null,
+  "outcome": null,
+  "error": null,
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 349
+    },
+    {
+      "step_id": "enter_member_number",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 24
+    },
+    {
+      "step_id": "open_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 152
+    },
+    {
+      "step_id": "open_view",
+      "status": "ok",
+      "strategy": "table_cell",
+      "duration_ms": 149
+    },
+    {
+      "step_id": "read_savings_balance",
+      "status": "ok",
+      "strategy": "table_cell",
+      "duration_ms": 19
+    }
+  ],
+  "recoveries": [
+    {
+      "code": "KNOWN_INTERSTITIAL",
+      "step_id": "open_member_search",
+      "attempts": 1,
+      "detail": "CoreOne security notice; acknowledged and dismissed."
+    }
+  ],
+  "interventions": [],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-03T16:33:47.931973Z",
+  "finished_at": "2026-10-03T16:33:49.139305Z",
+  "duration_ms": 1207
+}

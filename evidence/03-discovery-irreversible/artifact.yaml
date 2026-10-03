@@ -394,8 +394,8 @@ success:
   - output_present: confirmation_number
 provenance:
   source: discovered
-  run_id: discover-20261003T120134-b4b56f
+  run_id: discover-20261003T123302-9661cf
   served_by:
   - cassette
   recorded_on: harbor
-  recorded_at: '2026-10-03T16:01:48Z'
+  recorded_at: '2026-10-03T16:33:15Z'

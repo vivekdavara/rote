@@ -1,0 +1,91 @@
+{
+  "run_id": "discover-20261003T123302-9661cf-negative-1-confirm",
+  "capability": "coreone.member.open_sub_account",
+  "version": "0.1.0",
+  "content_hash": "sha256:a3fa1513adfccd7841f44c8a99cafa93eb9c9edbcb02c8ef07bd3f0378232aeb",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "business_outcome",
+  "outputs": null,
+  "preview": null,
+  "outcome": {
+    "code": "VALIDATION_REJECTED",
+    "message": "CoreOne rejected the request; the app's message says why.",
+    "step_id": "open_continue",
+    "messages": [
+      "Initial deposit must be at least $5.00."
+    ]
+  },
+  "error": null,
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 199
+    },
+    {
+      "step_id": "enter_member_number",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 29
+    },
+    {
+      "step_id": "open_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 191
+    },
+    {
+      "step_id": "open_view",
+      "status": "ok",
+      "strategy": "table_cell",
+      "duration_ms": 164
+    },
+    {
+      "step_id": "open_open_sub_account",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 511
+    },
+    {
+      "step_id": "choose_share_type",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 231
+    },
+    {
+      "step_id": "enter_nickname",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 109
+    },
+    {
+      "step_id": "enter_initial_deposit",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 66
+    },
+    {
+      "step_id": "choose_funding_account",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 20
+    },
+    {
+      "step_id": "check_truth_in_savings_disclosure",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 35
+    }
+  ],
+  "recoveries": [],
+  "interventions": [],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-03T16:33:29.519917Z",
+  "finished_at": "2026-10-03T16:33:32.234255Z",
+  "duration_ms": 2713
+}

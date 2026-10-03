@@ -1,0 +1,87 @@
+{
+  "run_id": "replay-20261003T122113-c02e65",
+  "capability": "coreone.member.get_savings_balance",
+  "version": "0.2.0",
+  "content_hash": "sha256:c2826e8fe9ea93f59eb57131ccc602bad95ff697a1743989f7d4b8b1447eb4d2",
+  "overlay_hash": null,
+  "tenant": "harbor",
+  "status": "succeeded",
+  "outputs": {
+    "savings_balance": {
+      "amount": "[balance#fa76a75e]",
+      "currency": "USD"
+    }
+  },
+  "preview": null,
+  "outcome": null,
+  "error": null,
+  "commit_state": "none",
+  "steps": [
+    {
+      "step_id": "open_member_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 189
+    },
+    {
+      "step_id": "enter_member_number",
+      "status": "ok",
+      "strategy": "label",
+      "duration_ms": 24
+    },
+    {
+      "step_id": "open_search",
+      "status": "ok",
+      "strategy": "role",
+      "duration_ms": 154
+    },
+    {
+      "step_id": "open_view",
+      "status": "ok",
+      "strategy": "table_cell",
+      "duration_ms": 150
+    },
+    {
+      "step_id": "read_savings_balance",
+      "status": "ok",
+      "strategy": "table_cell",
+      "duration_ms": 20
+    }
+  ],
+  "recoveries": [],
+  "interventions": [
+    {
+      "id": "int-c9b79b",
+      "reason_code": "UNKNOWN_MODAL",
+      "reason": "step enter_member_number: the control is covered by an unrecognized overlay: \"Fraud Alert This member's account is flagged for review. A supervisor override is required before continuing.\"",
+      "step_id": "enter_member_number",
+      "opened_at": "2026-10-03T16:21:14.192074Z",
+      "resolved_at": "2026-10-03T16:26:19.227599Z",
+      "resolution": "handed_back",
+      "operator": "Vivek",
+      "note": "Applied Supervisor Override",
+      "human_actions": [
+        {
+          "at": "2026-10-03T16:25:37.242549Z",
+          "kind": "click",
+          "detail": {
+            "x": 591,
+            "y": 217,
+            "frame": "main",
+            "role": "button",
+            "name": "Supervisor Override",
+            "tag": "input",
+            "label": "Fraud Alert"
+          }
+        }
+      ],
+      "attested_steps": []
+    }
+  ],
+  "drift": [],
+  "warnings": [],
+  "idempotent_replay": false,
+  "started_at": "2026-10-03T16:21:13.566213Z",
+  "finished_at": "2026-10-03T16:26:19.831504Z",
+  "duration_ms": 306270
+}

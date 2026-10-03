@@ -1,0 +1,27 @@
+{
+  "id": "int-c9b79b",
+  "reason_code": "UNKNOWN_MODAL",
+  "reason": "step enter_member_number: the control is covered by an unrecognized overlay: \"Fraud Alert This member's account is flagged for review. A supervisor override is required before continuing.\"",
+  "step_id": "enter_member_number",
+  "opened_at": "2026-10-03T16:21:14.192074Z",
+  "resolved_at": "2026-10-03T16:26:19.227599Z",
+  "resolution": "handed_back",
+  "operator": "Vivek",
+  "note": "Applied Supervisor Override",
+  "human_actions": [
+    {
+      "at": "2026-10-03T16:25:37.242549Z",
+      "kind": "click",
+      "detail": {
+        "x": 591,
+        "y": 217,
+        "frame": "main",
+        "role": "button",
+        "name": "Supervisor Override",
+        "tag": "input",
+        "label": "Fraud Alert"
+      }
+    }
+  ],
+  "attested_steps": []
+}
