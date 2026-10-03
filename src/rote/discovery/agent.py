@@ -31,7 +31,7 @@ from playwright.async_api import Error as PlaywrightError
 
 from rote.control.protocol import Escalator
 from rote.discovery.cassette import Cassette, CassetteEntry, bind, binding_for, templated
-from rote.discovery.compiler import CompileError, compile_trace, template_text, with_outcome
+from rote.discovery.compiler import CompileError, compile_trace, template_text, versioned, with_outcome
 from rote.discovery.planner import Decision, Planner, PlannerRequest
 from rote.discovery.prompts import goal_block, step_block
 from rote.discovery.recorder import ScreenState, TraceStep, build_candidates
@@ -41,7 +41,7 @@ from rote.registry.store import Workspace
 from rote.replay.engine import ReplayEngine, ReplayOptions
 from rote.replay.errors import HardFailure
 from rote.runtime import Runtime
-from rote.schema.capability import Capability, save_capability
+from rote.schema.capability import Capability, load_capability, save_capability
 from rote.schema.condition import AnyOf, TextVisible
 from rote.schema.result import InterventionRecord, RunResult
 from rote.schema.spec import GoalSpec
@@ -486,11 +486,16 @@ class DiscoveryAgent:
         assert self.start is not None
         compiled = compile_trace(self.spec, self.trace, start=self.start, run_id=self.run_id,
                                  model=self.planner.model, served_by=self.served_by, tenant=self.tenant.id)
-        capability = self._clean(compiled.capability)
+        path = self.workspace.capability_path(compiled.capability.id)
+        try:
+            previous = load_capability(path) if path.exists() else None  # what a re-discovery replaces
+        except (OSError, ValueError):
+            previous = None
+        capability = versioned(self._clean(compiled.capability), previous)
         result.notes.extend(compiled.notes)
         result.capability = capability
         if self.options.save:
-            result.capability_path = save_capability(capability, self.workspace.capability_path(capability.id))
+            result.capability_path = save_capability(capability, path)
         if self.options.verify:
             result.verification = await self._replay(capability, self.spec.example(1), "verify")
             self.log.event("checkpoint", step="verify-replay", status=result.verification.status,
@@ -499,10 +504,10 @@ class DiscoveryAgent:
                 result.reason = "VERIFY_FAILED: the compiled artifact did not replay on the second example"
                 return
         if self.options.learn_outcomes:
-            capability = await self._learn_outcomes(capability, result)
+            capability = versioned(await self._learn_outcomes(capability, result), previous)
             result.capability = capability
             if self.options.save:
-                result.capability_path = save_capability(capability, self.workspace.capability_path(capability.id))
+                result.capability_path = save_capability(capability, path)
         result.status = "compiled"
 
     def _clean(self, capability: Capability) -> Capability:

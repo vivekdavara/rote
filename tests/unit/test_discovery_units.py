@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from pathlib import Path
 
 from rote.discovery.cassette import bind, binding_for, templated
-from rote.discovery.compiler import _data_free, _discriminates, _fresh_ui_text, slug, template_text
+from rote.discovery.compiler import _data_free, _discriminates, _fresh_ui_text, slug, template_text, versioned
 from rote.discovery.recorder import ScreenState
+from rote.schema.capability import load_capability
 from rote.surface.web.observe import FrameView, Observation
 
 INPUTS = {"member_id": "100234"}
+AUTHORED = Path(__file__).parents[1] / "fixtures" / "artifacts" / "get_savings_balance.authored.yaml"
 
 
 def state(main_text: str) -> ScreenState:
@@ -84,3 +87,19 @@ def test_binding_disambiguates_rows_by_input_value() -> None:
     assert binding["row_has"] == ["{{inputs.member_id}}"] and "Avery Quill" not in str(binding)
     assert bind(binding, observation, INPUTS) == "e2"
     assert bind(binding, observation, {"member_id": "100517"}) == "e1"
+
+
+def test_rediscovery_versions_against_the_capability_it_replaces() -> None:
+    previous = load_capability(AUTHORED).model_copy(update={"version": "1.2.0"})
+    draft = previous.model_copy(update={"version": "0.1.0"})
+    assert versioned(draft, None).version == "0.1.0"  # a first discovery is a 0.x draft
+
+    same = versioned(draft, previous)  # nothing changed: same version, so the approval still matches
+    assert same.version == "1.2.0" and same.content_hash() == previous.content_hash()
+
+    steps = [s.model_copy(update={"intent": "Open the search screen."}) if i == 0 else s
+             for i, s in enumerate(draft.steps)]
+    assert versioned(draft.model_copy(update={"steps": steps}), previous).version == "1.3.0"  # procedure
+
+    inputs = {"member_id": draft.inputs["member_id"].model_copy(update={"pattern": "^[0-9]{7}$"})}
+    assert versioned(draft.model_copy(update={"inputs": inputs}), previous).version == "2.0.0"  # contract

@@ -125,6 +125,23 @@ def _postcondition(step: TraceStep, inputs: dict[str, str], notes: list[str]) ->
     return conditions[0] if len(conditions) == 1 else AllOf(all=conditions)
 
 
+def versioned(draft: Capability, previous: Capability | None) -> Capability:
+    """Version a re-discovered capability against the one it replaces.
+
+    A contract change bumps the major version and a procedure change the minor; an identical result keeps the
+    previous version, so its approval (bound to the content hash) still holds.
+    """
+    if previous is None:
+        return draft
+    major, minor, _patch = (int(part) for part in previous.version.split("."))
+    same = draft.model_copy(update={"version": previous.version})
+    if same.contract_hash() != previous.contract_hash():
+        return draft.model_copy(update={"version": f"{major + 1}.0.0"})
+    if same.content_hash() != previous.content_hash():
+        return draft.model_copy(update={"version": f"{major}.{minor + 1}.0"})
+    return same
+
+
 def _without_detours(steps: list[TraceStep], notes: list[str]) -> list[TraceStep]:
     """Drop navigation that came back to where it started (opened the wrong menu, went back).
 
