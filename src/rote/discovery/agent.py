@@ -203,6 +203,7 @@ class DiscoveryAgent:
                 continue
             await self.rt.settle()
             observation = await observe(page)
+            await self.rt.collect_screen_pii()  # before the decision, its rationale and the target are logged
             state = ScreenState.of(observation)
             # Only actions that could change the screen count toward "no progress":
             # reading three values in a row leaves the screen unchanged, as it should.

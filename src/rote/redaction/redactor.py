@@ -12,6 +12,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import re
 import secrets
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -67,8 +68,9 @@ class Redactor:
 
     def text(self, value: str) -> str:
         for known in sorted(self._values, key=len, reverse=True):
-            if known in value:
-                value = value.replace(known, self.pseudonym(known, self._values[known]))
+            if known in value:  # whole tokens only: "0.00" must not match inside "40.00"
+                token = re.compile(rf"(?<![0-9A-Za-z]){re.escape(known)}(?![0-9A-Za-z])")
+                value = token.sub(self.pseudonym(known, self._values[known]), value)
         return scrub(value)
 
     def data(self, value: Any) -> Any:

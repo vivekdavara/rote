@@ -41,6 +41,8 @@ from rote.surface.web.observe import render as render_observation
 from rote.surface.web.resolver import ResolutionFailure, Resolved, Resolver
 from rote.surface.web.session import BrowserOptions, WebSession, call
 
+MONEY = re.compile(r"\(?-?\$?\d[\d,]*\.\d{2}\)?")  # "$1,234.56", "1234.56", "($12.00)"
+
 
 def make_error(code: str, message: str, *, step_id: str | None = None, expected: str | None = None,
                evidence: list[str] | None = None) -> ErrorInfo:
@@ -228,6 +230,7 @@ class Runtime:
     async def observed(self) -> dict[str, Any]:
         if self.pending_dialog is not None:
             return {"frames": [], "dialog": self.dialog_message}  # the page can't be read behind a native dialog
+        await self.collect_screen_pii()  # what's reported as "observed" is logged, so register it first
         frames = []
         for frame in self.web.page.frames:
             try:
@@ -245,15 +248,26 @@ class Runtime:
         return {"frames": frames}
 
     async def collect_screen_pii(self) -> None:
-        labels = self.profile.redaction.mask_labels
-        if not labels or self.pending_dialog is not None:
+        """Register what the profile marks sensitive on this screen, so logs pseudonymize it and screenshots mask it.
+
+        Call it before anything read from the screen is logged: value cells next to declared labels, and the cells
+        of declared columns (money in any of its written forms).
+        """
+        redaction = self.profile.redaction
+        if self.pending_dialog is not None or not (redaction.mask_labels or redaction.mask_columns):
             return
         for frame in self.web.page.frames:
             try:
-                for item in await call(frame, "labeledValues", labels):
-                    self.redactor.register(item["text"], re.sub(r"\W+", "_", item["label"].lower()).strip("_"))
+                items = await call(frame, "labeledValues", redaction.mask_labels)
+                items += await call(frame, "columnValues", redaction.mask_columns)
             except PlaywrightError:
                 continue
+            for item in items:
+                cls = re.sub(r"\W+", "_", item["label"].lower()).strip("_")
+                if MONEY.fullmatch(item["text"]):
+                    self.redactor.register_money(item["text"], cls)
+                else:
+                    self.redactor.register(item["text"], cls)
 
     async def screenshot(self) -> bytes | None:
         """Masked screenshot, or None while a native dialog blocks the page (Chromium cannot capture then)."""

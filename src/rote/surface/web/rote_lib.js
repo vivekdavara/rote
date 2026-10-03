@@ -342,10 +342,33 @@
     return out;
   };
 
+  // Values in declared columns of data tables ("Balance", "Name"), registered for redaction like labeled values.
+  const columnValues = (columns) => {
+    const wanted = new Set(columns.map(norm));
+    const out = [];
+    for (const cell of document.querySelectorAll("td")) {
+      const context = tableContext(cell);
+      if (!context || !context.column || !wanted.has(norm(context.column))) continue;
+      const text = norm(cell.innerText);
+      if (text) out.push({ label: context.column, text });
+    }
+    return out;
+  };
+
   const PII = [/\b\d{3}-\d{2}-\d{4}\b/, /[\w.+-]+@[\w-]+\.[\w.-]+/, /\(?\b\d{3}\)?[-. ]?\d{3}[-. ]\d{4}\b/];
 
   // Mark what a saved screenshot must hide: passwords, fields holding sensitive
   // values, value cells next to declared labels, declared columns, and PII-looking text.
+  // A sensitive value counts only as a whole token: "0.00" must not match inside "$40.00".
+  const ALNUM = /[0-9A-Za-z]/;
+  const containsValue = (text, value) => {
+    for (let i = text.indexOf(value); i !== -1; i = text.indexOf(value, i + 1)) {
+      const before = text[i - 1], after = text[i + value.length];
+      if (!(before && ALNUM.test(before)) && !(after && ALNUM.test(after))) return true;
+    }
+    return false;
+  };
+
   const markForMasking = ({ labels, columns, values }) => {
     const wantedLabels = new Set(labels.map(norm));
     const wantedColumns = new Set(columns.map(norm));
@@ -356,7 +379,7 @@
       count += 1;
     };
     for (const input of document.querySelectorAll("input, textarea")) {
-      if (input.type === "password" || sensitive.some((v) => (input.value || "").includes(v))) mark(input);
+      if (input.type === "password" || sensitive.some((v) => containsValue(input.value || "", v))) mark(input);
     }
     for (const cell of document.querySelectorAll("td")) {
       const text = cell.innerText || "";
@@ -364,7 +387,15 @@
       const context = tableContext(cell);
       if (prev && wantedLabels.has(norm(prev.innerText)) && !inHeaderRow(cell)) mark(cell);
       else if (context && context.column && wantedColumns.has(context.column)) mark(cell);
-      else if (!cell.querySelector("td") && (sensitive.some((v) => text.includes(v)) || PII.some((re) => re.test(text)))) mark(cell);
+      else if (!cell.querySelector("td") && (sensitive.some((v) => containsValue(text, v)) || PII.some((re) => re.test(text)))) mark(cell);
+    }
+    // Sensitive text outside fields and tables ("Member #: 100517" above a form): mask the element holding it.
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const host = node.parentElement;
+      if (!host || host.closest("td, [data-rote-mask]") || !isVisible(host)) continue;
+      const text = node.textContent || "";
+      if (sensitive.some((v) => containsValue(text, v)) || PII.some((re) => re.test(text))) mark(host);
     }
     return count;
   };
@@ -399,6 +430,7 @@
     hitTest,
     elementAt,
     labeledValues,
+    columnValues,
     markForMasking,
     clearMasks,
     summary,

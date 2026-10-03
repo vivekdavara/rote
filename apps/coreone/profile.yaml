@@ -84,4 +84,4 @@ dialogs:
 
 redaction:
   mask_labels: [Name, Address, Phone, SSN, Date of Birth, Notes]
-  mask_columns: [Name]
+  mask_columns: [Name, Balance, Available]
