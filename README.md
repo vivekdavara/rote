@@ -35,8 +35,8 @@ Python 3.11 and Chromium (installed by Playwright).
 
 ```bash
 make setup     # venv, package + dev extras, Chromium, and .env from .env.example
-make test      # 131 tests: unit + integration against the mock, no API key needed
-make demo      # regenerates evidence/ end to end, no API key needed (about 3 minutes)
+make test      # 132 tests: unit + integration against the mock, no API key needed
+make demo      # regenerates evidence/ end to end, no API key needed (2–3 minutes; OCR-checks screenshots on macOS)
 ```
 
 `.env` holds the mock's training login (`COREONE_USERNAME`, `COREONE_PASSWORD`). Only live discovery needs
