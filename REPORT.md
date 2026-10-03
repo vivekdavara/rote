@@ -140,7 +140,7 @@ Irreversible capabilities use **preview, then commit**, because an LLM caller wo
    unknown`, and it is never retried.
 
 Evidence: 16 scenarios, a fault matrix, negative controls (mutated artifacts must fail with the right code), and
-20 of 20 identical replays (p50 825 ms, p95 1414 ms). Control names change with the seed; no artifact depends on
+20 of 20 identical replays (p50 804 ms, p95 824 ms). Control names change with the seed; no artifact depends on
 them.
 
 ## Heterogeneity & multi-tenant

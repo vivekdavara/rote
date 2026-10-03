@@ -152,9 +152,9 @@ success:
   - output_present: savings_balance
 provenance:
   source: discovered
-  run_id: discover-20261003-102718-543b9d
+  run_id: discover-20261003T104601-61bc94
   model: claude-opus-5-5
   served_by:
   - claude-opus-5-5
   recorded_on: harbor
-  recorded_at: '2026-10-03T14:27:23Z'
+  recorded_at: '2026-10-03T14:46:07Z'
