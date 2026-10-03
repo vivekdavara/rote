@@ -9,8 +9,8 @@ It runs against a fresh CoreOne mock and a throwaway workspace:
 4. fault-matrix.md, stability.md, an MCP transcript, and a PII canary scan
 5. evidence/README.md, an index with expected vs. observed for every scenario
 
-A live discovery run (`rote discover --live`) lives in evidence/01-discovery-live/.
-This command never touches that folder: live evidence is committed as recorded.
+Recorded evidence is never regenerated: a live discovery run (`rote discover --live`) in
+evidence/01-discovery-live/, and a handoff done by a person in evidence/17-handoff-by-a-person/.
 """
 
 from __future__ import annotations
@@ -21,15 +21,18 @@ import os
 import re
 import shutil
 import statistics
+import subprocess
 import sys
 import tempfile
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 import httpx
+import yaml
 from playwright.async_api import Browser, async_playwright
 
 from rote.control.plane import ControlPlane
@@ -50,9 +53,38 @@ SUB = "coreone.member.open_sub_account"
 SUB_INPUTS = {"member_id": "100517", "share_type": "Money Market", "nickname": "Rainy Day", "deposit": "40.00",
               "funding_suffix": "S10"}
 REVIEWER = "demo reviewer (scripted by `rote demo`)"
-# Values that must never appear in persisted evidence (synthetic, but treated as real).
-CANARIES = ["100234", "100517", "100733", "100900", "100666", "Avery Quill", "Jordan Pike", "Casey Lin",
-            "900-12-0234", "900-45-0517", "1234.56", "1,234.56", "318.02", "12 Sample Lane", "(555) 010-2234"]
+RECORDED = ("01-discovery-live", "17-handoff-by-a-person")
+TEXT_SUFFIXES = (".json", ".jsonl", ".txt", ".md", ".yaml")
+OCR_SOURCE = Path(__file__).parent / "evidence" / "ocr.swift"  # committed as recorded; `rote demo` leaves them alone
+
+
+def seed_canaries() -> list[str]:
+    """Every synthetic member value in the mock's seed, which must never appear in persisted evidence.
+
+    Identity fields (member number, name, address, phone, SSN, date of birth) and every non-zero account balance
+    and available amount, written both ways (1234.56 and 1,234.56). Zero is left out: "0.00" carries nothing.
+    """
+    seed = yaml.safe_load((REPO / "mockapp" / "seed" / "members.yaml").read_text(encoding="utf-8"))
+    members = seed["members"] if isinstance(seed, dict) else seed
+    values: set[str] = set()
+    for member in members:
+        values.update(str(member[k]) for k in ("member_id", "name", "address", "phone", "ssn", "dob") if member.get(k))
+        if member.get("address"):
+            values.add(str(member["address"]).split(",")[0])  # the street on its own
+        for account in member.get("accounts", []):
+            for key in ("balance", "available"):
+                amount = Decimal(str(account[key]))
+                if amount:
+                    values.update({f"{amount:.2f}", f"{amount:,.2f}"})
+    return sorted(values, key=lambda v: (-len(v), v))
+
+
+CANARIES = seed_canaries()
+
+
+def canary_pattern(value: str) -> re.Pattern[str]:
+    """A canary matches as a whole token, so "50.00" is not found inside "150.00"."""
+    return re.compile(rf"(?<![0-9A-Za-z]){re.escape(value)}(?![0-9A-Za-z])")
 
 
 @dataclass
@@ -296,7 +328,7 @@ class Demo:
         (self.evidence / "16-mcp-catalog").mkdir(parents=True, exist_ok=True)
         transcript = "\n".join(lines)
         for canary in CANARIES:  # the caller legitimately gets outputs; the committed transcript must not
-            transcript = transcript.replace(canary, "[redacted]")
+            transcript = canary_pattern(canary).sub("[redacted]", transcript)
         (self.evidence / "16-mcp-catalog" / "transcript.md").write_text(transcript)
         ok = outcomes == [("succeeded", False), ("business_outcome", False), ("preview", False)]
         self.record(Scenario("16-mcp-catalog", "An MCP client lists the approved tools and calls them",
@@ -319,18 +351,41 @@ class Demo:
 
     # ---------------------------------------------------------------- reports
 
+    def ocr_scan(self) -> tuple[str, list[str]]:
+        """Read every screenshot with macOS Vision and look for seeded values; a text scan can't see pixels."""
+        swiftc = shutil.which("swiftc")
+        if sys.platform != "darwin" or swiftc is None:
+            return "Screenshots were not OCR-checked: that needs macOS with swiftc.", []
+        images = sorted(str(p) for p in self.evidence.rglob("*.png"))
+        with tempfile.TemporaryDirectory() as tmp:
+            binary = Path(tmp) / "ocr"
+            subprocess.run([swiftc, "-O", str(OCR_SOURCE), "-o", str(binary)], check=True, capture_output=True)
+            output = subprocess.run([str(binary), *images], check=True, capture_output=True, text=True).stdout
+        hits = []
+        for line in output.splitlines():
+            path, _, text = line.partition("\t")
+            hits += [f"{Path(path).relative_to(self.evidence)}: {c}" for c in CANARIES if canary_pattern(c).search(text)]
+        verdict = "no seeded value in any of them" if not hits else f"{len(hits)} HITS: " + "; ".join(hits[:10])
+        return f"OCR (macOS Vision) then read all {len(images)} screenshots: {verdict}.", hits
+
+    def text_files(self) -> int:
+        return sum(1 for p in self.evidence.rglob("*") if p.is_file() and p.suffix in TEXT_SUFFIXES)
+
     def canary_scan(self) -> list[str]:
         hits = []
         for path in self.evidence.rglob("*"):
-            if path.is_file() and path.suffix in (".json", ".jsonl", ".txt", ".md", ".yaml"):
+            if path.is_file() and path.suffix in TEXT_SUFFIXES:
                 body = path.read_text(encoding="utf-8", errors="ignore")
-                hits += [f"{path.relative_to(self.evidence)}: {c}" for c in CANARIES if c in body]
+                hits += [f"{path.relative_to(self.evidence)}: {c}" for c in CANARIES if canary_pattern(c).search(body)]
         return hits
 
-    def write_index(self, hits: list[str], live: bool) -> None:
+    def write_index(self, hits: list[str], live: bool, ocr_note: str) -> None:
         rows = "\n".join(f"| `{s.folder}` | {s.title} | {s.expected} | {s.observed} | {'yes' if s.passed else 'NO'} |"
                          for s in self.scenarios)
         notes = "\n".join(f"- `{s.folder}`: {n}" for s in self.scenarios for n in s.notes)
+        human = (self.evidence / "17-handoff-by-a-person").is_dir()
+        human_note = ("\n- `17-handoff-by-a-person/` is a handoff done by a person through the console UI, committed as "
+                      "recorded." if human else "")
         live_note = ("`01-discovery-live/` holds a real model run (`rote discover --live`), committed as recorded."
                      if live else "`01-discovery-live/` has no live model run yet (see its README). "
                      "Run `rote discover specs/get_savings_balance.yaml --live` and copy the run folder there.")
@@ -349,12 +404,13 @@ masked screenshots, and on failure `failure/` (a redacted snapshot of the screen
 Notes:
 {notes}
 - Approvals in this demo were made by a scripted reviewer and the handoff in `11-` by a scripted operator
-  driving the real console API. A handoff by a person through the console UI is recorded separately when
-  available.
+  driving the real console API.{human_note}
 
-**PII canary:** scanned {sum(1 for p in self.evidence.rglob('*') if p.is_file())} files for
-{len(CANARIES)} synthetic member values (member numbers, names, SSNs, balances, addresses, phones):
-{'no hits.' if not hits else f'{len(hits)} HITS: ' + '; '.join(hits[:10])}
+**PII canary:** scanned {self.text_files()} text files (everything but screenshots) for {len(CANARIES)}
+synthetic values: every member's number, name, address, phone, SSN and date of birth, and every account amount
+in the seed. {'No hits.' if not hits else f'{len(hits)} HITS: ' + '; '.join(hits[:10])} Screenshots are masked
+when saved (the profile's labels and its Name, Balance and Available columns, plus every value the run
+registered as sensitive, wherever it appears). {ocr_note}
 
 See also [fault-matrix.md](fault-matrix.md) and [stability.md](stability.md).
 """)
@@ -371,7 +427,7 @@ See also [fault-matrix.md](fault-matrix.md) and [stability.md](stability.md).
     async def main(self) -> int:
         live = any(p.is_dir() for p in (self.evidence / "01-discovery-live").glob("discover-*"))
         for folder in self.evidence.glob("*"):
-            if folder.name != "01-discovery-live":
+            if folder.name not in RECORDED:
                 shutil.rmtree(folder) if folder.is_dir() else folder.unlink()
         (self.evidence / "01-discovery-live").mkdir(parents=True, exist_ok=True)
         live_cassette = REPO / "tests" / "fixtures" / "cassettes" / "get_savings_balance.live.json"
@@ -419,12 +475,13 @@ See also [fault-matrix.md](fault-matrix.md) and [stability.md](stability.md).
             await self.browser.close()
         self.mock.stop()
         hits = self.canary_scan()
-        self.write_index(hits, live)
+        ocr_note, ocr_hits = self.ocr_scan()
+        self.write_index(hits, live, ocr_note)
         shutil.rmtree(self.root, ignore_errors=True)
         failed = [s.folder for s in self.scenarios if not s.passed]
         print(f"\n{len(self.scenarios) - len(failed)}/{len(self.scenarios)} scenarios matched; PII canary hits: "
-              f"{len(hits)}; evidence in {self.evidence}")
-        return 0 if not failed and not hits else 1
+              f"{len(hits)} in text, {len(ocr_hits)} in screenshots; evidence in {self.evidence}")
+        return 0 if not failed and not hits and not ocr_hits else 1
 
 
 def run_demo(evidence: Path) -> int:
